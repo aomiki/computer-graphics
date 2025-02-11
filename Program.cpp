@@ -1,41 +1,19 @@
 #include "include/lodepng.h"
+#include "modules/image_codec.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
 #include <math.h>
 
+
 std::string source_file_path = "/home/aomiki/Pictures/2by2_16bits.png";
 std::string result_file_path = "result.png";
-
-struct color_rgb {
-    unsigned char red = 0;
-    unsigned char green = 0;
-    unsigned char blue = 0;
-};
-
-struct matrix_rgb {
-    std::vector<unsigned char> array;
-    unsigned width;
-    unsigned height;
-
-
-    void set(unsigned x, unsigned y, color_rgb color)
-    {
-        size_t index = (width*y+x)*3;
-
-        (array)[index] = color.red;
-        (array)[index+1] = color.green;
-        (array)[index+2] = color.blue;
-    }
-};
 
 void lr1_task1_img_black(unsigned width, unsigned height);
 void lr1_task1_img_white(unsigned width, unsigned height);
 void lr1_task1_img_red(unsigned width, unsigned height);
 void lr1_task1_img_gradient(unsigned width, unsigned height);
-void encode(std::vector<unsigned char>* img_source, std::vector<unsigned char>* img_buffer, unsigned width, unsigned height, LodePNGColorType colortype, unsigned bit_depth);
-void img_fill_rgb(std::vector<unsigned char>* img, unsigned width, unsigned height, char val_r, char val_g, char val_b);
-void save_png(std::vector<unsigned char>* png_buffer);
 void dotted_line(matrix_rgb* matrix, unsigned x0, unsigned y0, unsigned x1, unsigned y1, int count, color_rgb line_color);
 void lr1_task2_line(void (&draw_line)(matrix_rgb *matrix, unsigned int x0, unsigned int y0, unsigned int x1, unsigned int y1, int count, color_rgb line_color));
 
@@ -65,15 +43,11 @@ int main()
 void lr1_task2_line(void (&draw_line)(matrix_rgb *matrix, unsigned int x0, unsigned int y0, unsigned int x1, unsigned int y1, int count, color_rgb line_color))
 {
     std::vector<unsigned char> png;
-    matrix_rgb matrix;
-    matrix.width = 200;
-    matrix.height = 200;
-    
-    img_fill_rgb(&matrix.array, matrix.width, matrix.height, 95, 164, 237);
-    color_rgb line_color;
-    line_color.red = 249;
-    line_color.green = 89;
-    line_color.blue = 255;
+    matrix_rgb matrix(200, 200);
+
+    matrix.fill(color_rgb(95, 164, 237));
+
+    color_rgb line_color(249, 89, 255);
 
     for (size_t i = 0; i < 13; i++)
     {
@@ -84,8 +58,8 @@ void lr1_task2_line(void (&draw_line)(matrix_rgb *matrix, unsigned int x0, unsig
         draw_line(&matrix, 100, 100, x1, y1, 1000, line_color);
     }
 
-    encode(&matrix.array, &png, matrix.width, matrix.height, LodePNGColorType::LCT_RGB, 8);
-    save_png(&png);
+    encode(&png, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    save_image_file(&png, result_file_path);
 }
 
 void dotted_line(matrix_rgb* matrix, unsigned x0, unsigned y0, unsigned x1, unsigned y1, int count, color_rgb line_color)
@@ -100,99 +74,58 @@ void dotted_line(matrix_rgb* matrix, unsigned x0, unsigned y0, unsigned x1, unsi
     }
 }
 
-void img_fill(std::vector<unsigned char>* img, unsigned width, unsigned height, char value)
+void img_fill_gradient(matrix_rgb* matrix, color_rgb basecolor)
 {
-    for (size_t i = 0; i < width; i++)
+    for (size_t i = 0; i < matrix->width; i++)
     {
-        for (size_t j = 0; j < height; j++)
+        for (size_t j = 0; j < matrix->height; j++)
         {
-            img->push_back(value);
+            matrix->array.push_back(basecolor.red);
+            matrix->array.push_back(j);
+            matrix->array.push_back(basecolor.blue);
         }
     }
-}
-
-void img_fill_gradient(std::vector<unsigned char>* img, unsigned width, unsigned height, char val_r, char val_b)
-{
-    for (size_t i = 0; i < width; i++)
-    {
-        for (size_t j = 0; j < height; j++)
-        {
-            img->push_back(val_r);
-            img->push_back(j);
-            img->push_back(val_b);
-        }
-    }
-}
-
-void img_fill_rgb(std::vector<unsigned char>* img, unsigned width, unsigned height, char val_r, char val_g, char val_b)
-{
-    for (size_t i = 0; i < width; i++)
-    {
-        for (size_t j = 0; j < height; j++)
-        {
-            img->push_back(val_r);
-            img->push_back(val_g);
-            img->push_back(val_b);
-        }
-    }
-}
-
-void encode(std::vector<unsigned char>* img_source, std::vector<unsigned char>* img_buffer, unsigned width, unsigned height, LodePNGColorType colortype, unsigned bit_depth)
-{
-    lodepng::encode(*img_buffer, *img_source, width, height, colortype, bit_depth);
-}
-
-void decode(std::vector<unsigned char>* img_source, std::vector<unsigned char>* img_buffer, unsigned width, unsigned height, LodePNGColorType colortype, unsigned bit_depth)
-{
-   lodepng::decode(*img_buffer, width, height, *img_source, colortype, bit_depth);
-}
-
-void load_png(std::vector<unsigned char>* png_buffer)
-{
-    lodepng::load_file(*png_buffer, source_file_path);
-}
-
-void save_png(std::vector<unsigned char>* png_buffer)
-{
-    lodepng::save_file(*png_buffer, result_file_path);
 }
 
 void lr1_task1_img_black(unsigned width, unsigned height)
 {
-    std::vector<unsigned char> img;
+    matrix_gray matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
-    img_fill(&img, width, height, 0);
-    encode(&img, &png_buffer, width, height, LodePNGColorType::LCT_GREY, 8);
-    save_png(&png_buffer);
+    matrix.fill(0);
+
+    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
+    save_image_file(&png_buffer, result_file_path);
 }
 
 void lr1_task1_img_white(unsigned width, unsigned height)
 {
-    std::vector<unsigned char> img;
+    matrix_gray matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
-    img_fill(&img, width, height, 255);
-    encode(&img, &png_buffer, width, height, LodePNGColorType::LCT_GREY, 8);
-    save_png(&png_buffer);
+    matrix.fill(255);
+
+    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
+    save_image_file(&png_buffer, result_file_path);
 }
 
 void lr1_task1_img_red(unsigned width, unsigned height)
 {
-    std::vector<unsigned char> img;
+    matrix_rgb matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
-    img_fill_rgb(&img, width, height, 255, 0, 0);
-    encode(&img, &png_buffer, width, height, LodePNGColorType::LCT_RGB, 8);
-    save_png(&png_buffer);
+    matrix.fill(color_rgb(255, 0, 0));
+
+    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    save_image_file(&png_buffer, result_file_path);
 }
 
 void lr1_task1_img_gradient(unsigned width, unsigned height)
 {
-    std::vector<unsigned char> img;
+    matrix_rgb matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
-    img_fill_gradient(&img, width, height, 95, 237);
-    encode(&img, &png_buffer, width, height, LodePNGColorType::LCT_RGB, 8);
-    save_png(&png_buffer);
+    img_fill_gradient(&matrix, color_rgb(95, 0, 237));
+    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    save_image_file(&png_buffer, result_file_path);
 }
