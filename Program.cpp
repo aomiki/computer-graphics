@@ -1,5 +1,5 @@
-#include "include/lodepng.h"
-#include "modules/image_codec.h"
+#include "lodepng.h"
+#include "image_codec.h"
 
 #include <iostream>
 #include <vector>

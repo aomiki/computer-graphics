@@ -1,5 +1,5 @@
 #include "image_codec.h"
-#include "../include/lodepng.h"
+#include "lodepng.h"
 
 inline LodePNGColorType ColorSchemeToLodeColorType(ImageColorScheme colorscheme)
 {

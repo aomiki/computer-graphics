@@ -50,6 +50,6 @@ class matrix_gray : public matrix_color<char>
         void virtual fill(char value);
 };
 
-#include "image_tools.ipp"
+#include "impls/image_tools.ipp"
 
 #endif
