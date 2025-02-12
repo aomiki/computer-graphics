@@ -11,9 +11,20 @@ struct color_rgb {
         blue = b;
     }
 
-    unsigned char red = 0;
-    unsigned char green = 0;
-    unsigned char blue = 0;
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+};
+
+struct matrix_coord {
+    matrix_coord(unsigned x, unsigned y)
+    {
+        this->x = x;
+        this->y = y;
+    }
+
+    unsigned x;
+    unsigned y;
 };
 
 class matrix {
