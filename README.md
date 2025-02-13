@@ -7,4 +7,4 @@ Draws color:
 
 Draws lines:
 
-![star](output/LR1/t2_img_lines17.png)
+![star](output/LR1/t2_img_line_bresenham.png)
