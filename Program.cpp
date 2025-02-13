@@ -23,8 +23,16 @@ int main()
     lr1_task1_img_red(100, 100, lr1_result_folder + "t1_img_red.png");
 
     lr1_task1_img_gradient(255, 255, lr1_result_folder + "t1_img_gradient.png");
+    
+    lr1_task2_line(dotted_line_count, lr1_result_folder + "t2_img_line_interp_count.png");
+    lr1_task2_line(draw_line_interpolation, lr1_result_folder + "t2_img_line_interp_autocount.png");
+    lr1_task2_line(draw_line_interpolation_xloop, lr1_result_folder + "t2_img_line_interp_xloop.png");
+    lr1_task2_line(draw_line_interpolation_xloop_fixX, lr1_result_folder + "t2_img_line_interp_xloop_fixX.png");
+    lr1_task2_line(draw_line_interpolation_xloop_fixXfixY, lr1_result_folder + "t2_img_line_interp_xloop_fixXfixY.png");
+    lr1_task2_line(draw_line_dy, lr1_result_folder + "t2_img_line_dy.png");
+    lr1_task2_line(draw_line_dy_rev1, lr1_result_folder + "t2_img_line_dy_rev1.png");
+    lr1_task2_line(draw_line, lr1_result_folder + "t2_img_line_bresenham.png");
 
-    lr1_task2_line(dotted_line_count, lr1_result_folder + "t2_img_lines17.png");
 
     std::cout << "that's it" << std::endl;
 }
