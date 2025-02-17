@@ -1,3 +1,5 @@
 /a.out
 /image_codec_cuda.o
 /output
+*.o
+*.out
