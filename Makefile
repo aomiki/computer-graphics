@@ -1,4 +1,4 @@
-.PHONY: clean
+.PHONY: clean clean-output-LR1
 
 #Main compiler
 CXX = g++
