@@ -102,7 +102,7 @@ void load_image_file(std::vector<unsigned char>* png_buffer, std::string image_f
 
 void save_image_file(std::vector<unsigned char>* img_buff, std::string image_filepath)
 {
-    std::ofstream output_file(image_filepath, std::ios::out | std::ios::binary);
+    std::ofstream output_file(image_filepath+".jpeg", std::ios::out | std::ios::binary);
     output_file.write((char *)img_buff->data(), img_buff->size());
     output_file.close();
 }

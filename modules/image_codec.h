@@ -13,4 +13,7 @@ void decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageCol
 
 void load_image_file(std::vector<unsigned char>* png_buffer, std::string image_filepath);
 
+/// @brief Saves image to file
+/// @param png_buffer image data
+/// @param image_filepath filepath, without extension
 void save_image_file(std::vector<unsigned char>* png_buffer, std::string image_filepath);

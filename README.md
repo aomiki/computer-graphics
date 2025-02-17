@@ -1,10 +1,10 @@
 # computer-graphics
 
-Using [lodepng](https://github.com/lvandeve/lodepng) library, works with images directly, encoding them in png.
+Using CUDA or [lodepng](https://github.com/lvandeve/lodepng) library, works with images directly, encoding them in PNG (using lodepng) or JPEG (using CUDA's nvJPEG).
 
 Draws color:  
-![gradient](output/LR1/t1_img_gradient.png)
+![gradient](examples/t1_img_gradient_cuda.jpeg)
 
 Draws lines:
 
-![star](output/LR1/t2_img_line_bresenham.png)
+![star](examples/t2_img_line_bresenham_cuda.jpeg)

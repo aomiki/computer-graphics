@@ -31,5 +31,5 @@ void load_image_file(std::vector<unsigned char>* png_buffer, std::string image_f
 
 void save_image_file(std::vector<unsigned char>* png_buffer, std::string image_filepath)
 {
-    lodepng::save_file(*png_buffer, image_filepath);
+    lodepng::save_file(*png_buffer, image_filepath+".png");
 }
