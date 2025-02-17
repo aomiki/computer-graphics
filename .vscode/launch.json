@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
     {
+        "name": "CUDA C++: Launch",
+        "type": "cuda-gdb",
+        "request": "launch",
+        "program": "${workspaceFolder}/a.out"
+    },
+    {
         "name": "(gdb) Launch",
         "type": "cppdbg",
         "request": "launch",
