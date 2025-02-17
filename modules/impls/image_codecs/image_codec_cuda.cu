@@ -74,8 +74,9 @@ void encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageCol
 
     cuda_log(cudaStreamSynchronize(stream));
     
-    //clear up
+    //clean up
     cuda_log(cudaStreamDestroy(stream));
+    cuda_log(cudaFree(nv_image.channel[0]));
 }
 
 void decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
