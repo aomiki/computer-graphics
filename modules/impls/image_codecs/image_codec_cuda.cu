@@ -31,6 +31,11 @@ void encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageCol
     cuda_log(nvjpegEncoderStateCreate(nv_handle, &nv_enc_state, stream));
     cuda_log(nvjpegEncoderParamsCreate(nv_handle, &nv_enc_params, stream));
 
+    // set the highest quality
+    cuda_log(nvjpegEncoderParamsSetQuality(nv_enc_params, 100, stream));
+
+    //use the best type of JPEG encoding
+    cuda_log(nvjpegEncoderParamsSetEncoding(nv_enc_params, nvjpegJpegEncoding_t::NVJPEG_ENCODING_LOSSLESS_HUFFMAN, stream));
 
     nvjpegImage_t nv_image;
     //Pitch represents bytes per row
@@ -43,7 +48,6 @@ void encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageCol
         cuda_log(nvjpegEncoderParamsSetSamplingFactors(nv_enc_params, NVJPEG_CSS_444, stream));
 
         pitch_0_size *= 3;
-
     }
     else
     {
