@@ -16,23 +16,9 @@ void cuda_log(cudaError_t status)
     last_error = status;
 }
 
-nvjpegInputFormat_t colorSchemeToNvOutputFormat(ImageColorScheme colorScheme)
-{
-    switch (colorScheme)
-    {
-    case ImageColorScheme::IMAGE_RGB :
-        
-        return nvjpegInputFormat_t::NVJPEG_INPUT_RGBI;
-    default:
-        return nvjpegInputFormat_t::NVJPEG_INPUT_RGBI;
-    }
-}
-
 void encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
     // code taken from example: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
-    nvjpegInputFormat_t format = colorSchemeToNvOutputFormat(colorScheme);
-
     nvjpegHandle_t nv_handle;
     nvjpegEncoderState_t nv_enc_state;
     nvjpegEncoderParams_t nv_enc_params;
@@ -45,23 +31,44 @@ void encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageCol
     cuda_log(nvjpegEncoderStateCreate(nv_handle, &nv_enc_state, stream));
     cuda_log(nvjpegEncoderParamsCreate(nv_handle, &nv_enc_params, stream));
 
-    // This has to be done, default params are not sufficient
-    // source: https://stackoverflow.com/questions/65929613/nvjpeg-encode-packed-bgr
-    cuda_log(nvjpegEncoderParamsSetSamplingFactors(nv_enc_params, NVJPEG_CSS_444, stream)); 
 
     nvjpegImage_t nv_image;
+    //Pitch represents bytes per row
+    size_t pitch_0_size = img_matrix->width;
+
+    if (colorScheme == ImageColorScheme::IMAGE_RGB)
+    {
+        // This has to be done, default params are not sufficient
+        // source: https://stackoverflow.com/questions/65929613/nvjpeg-encode-packed-bgr
+        cuda_log(nvjpegEncoderParamsSetSamplingFactors(nv_enc_params, NVJPEG_CSS_444, stream));
+
+        pitch_0_size *= 3;
+
+    }
+    else
+    {
+        cuda_log(nvjpegEncoderParamsSetSamplingFactors(nv_enc_params, NVJPEG_CSS_GRAY, stream));
+    }
 
     // Fill nv_image with image data, by copying data from matrix to GPU
     // docs about nv_image: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
-    cuda_log(cudaMalloc((void **)&(nv_image.channel[0]), img_matrix->height * img_matrix->width * 3));
-    cuda_log(cudaMemcpy(nv_image.channel[0], img_matrix->array.data(), img_matrix->height * img_matrix->width * 3, cudaMemcpyHostToDevice));
+    cuda_log(cudaMalloc((void **)&(nv_image.channel[0]), pitch_0_size * img_matrix->height));
+    cuda_log(cudaMemcpy(nv_image.channel[0], img_matrix->array.data(), pitch_0_size * img_matrix->height, cudaMemcpyHostToDevice));
     
-    //Pitch represents bytes per row
-    nv_image.pitch[0] = img_matrix->width *3;
+    nv_image.pitch[0] = pitch_0_size;
 
     // Compress image
-    cuda_log(nvjpegEncodeImage(nv_handle, nv_enc_state, nv_enc_params,
-        &nv_image, format, img_matrix->width, img_matrix->height, stream));
+    if (colorScheme == ImageColorScheme::IMAGE_RGB)
+    {
+        cuda_log(nvjpegEncodeImage(nv_handle, nv_enc_state, nv_enc_params,
+            &nv_image, nvjpegInputFormat_t::NVJPEG_INPUT_RGBI, img_matrix->width, img_matrix->height, stream));   
+    }
+    else
+    {
+        cuda_log(nvjpegEncodeYUV(nv_handle, nv_enc_state, nv_enc_params,
+            &nv_image, nvjpegChromaSubsampling_t::NVJPEG_CSS_GRAY, img_matrix->width, img_matrix->height, stream));
+    }
+    
 
     // get compressed stream size
     size_t length = 0;
