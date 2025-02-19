@@ -23,14 +23,14 @@ LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos
 
 #General arguments
 LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
-CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.cpp -g
+CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.o -g
 
 #Compile with LodePNG implementation
-graphics-lode.out: $(MODULES) $(LRS) $(LODE)
+graphics-lode.out: $(MODULES) $(LRS) $(LODE) Program.o
 	$(CXX) $(CXXFLAGS) $(LODE) -o graphics-lode.out 
 
 #Compile with CUDA implementation
-graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES)
+graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
 	$(CXX) $(CXXFLAGS) $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -o graphics-cuda.out 
 
 #Compile CUDA implementation (target that invokes if *.o with *.cu source is required by other targets)

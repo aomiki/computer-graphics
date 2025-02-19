@@ -16,3 +16,9 @@ inline matrix::matrix(unsigned width, unsigned height)
     this->height = height;
     this->width = width;
 }
+
+inline matrix::matrix()
+{
+    this->height = 0;
+    this->width = 0;
+}

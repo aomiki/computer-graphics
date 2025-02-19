@@ -17,6 +17,7 @@ struct color_rgb {
 };
 
 struct matrix_coord {
+
     matrix_coord(unsigned x, unsigned y)
     {
         this->x = x;
@@ -34,11 +35,13 @@ class matrix {
         unsigned height;
 
         matrix(unsigned width, unsigned height);
+        matrix();
 };
 
 template<typename E>
 class matrix_color : public matrix {
     public:
+    matrix_color() : matrix() {}
     matrix_color(unsigned width, unsigned height) : matrix(width, height) {}
     void virtual set(unsigned x, unsigned y, E color) = 0;
 
@@ -48,6 +51,7 @@ class matrix_color : public matrix {
 class matrix_rgb : public matrix_color<color_rgb>
 {
     public:
+        matrix_rgb(): matrix_color<color_rgb>() {}
         matrix_rgb(unsigned width, unsigned height): matrix_color<color_rgb>(width, height) {}
         void virtual set(unsigned x, unsigned y, color_rgb color);
         void virtual fill(color_rgb value);

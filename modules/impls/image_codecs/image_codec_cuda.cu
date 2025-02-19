@@ -92,11 +92,14 @@ void encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageCol
 
 void decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
-
+    
 }
 
-void load_image_file(std::vector<unsigned char>* png_buffer, std::string image_filepath)
+void load_image_file(std::vector<unsigned char>* img_buff, std::string image_filepath)
 {
+    std::ifstream input_file(image_filepath+".jpeg", std::ios::out | std::ios::binary);
+    input_file.read((char *)img_buff->data(), img_buff->size());
+    input_file.close();
 
 }
 
