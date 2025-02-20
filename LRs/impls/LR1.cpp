@@ -1,8 +1,7 @@
 #include "LR1.h"
-#include "image_codec.h"
 #include "image_draw_lines.h"
 
-void lr1_task2_line(void (&draw_line)(matrix_rgb* matrix, matrix_coord from, matrix_coord to, color_rgb line_color), std::string filepath)
+void lr1_task2_line(void (&draw_line)(matrix_rgb* matrix, matrix_coord from, matrix_coord to, color_rgb line_color), std::string filepath, image_codec* codec)
 {
     std::vector<unsigned char> png;
     matrix_rgb matrix(200, 200);
@@ -13,8 +12,8 @@ void lr1_task2_line(void (&draw_line)(matrix_rgb* matrix, matrix_coord from, mat
 
     draw_star(&matrix, from, line_color, draw_line);
 
-    encode(&png, &matrix, ImageColorScheme::IMAGE_RGB, 8);
-    save_image_file(&png, filepath);
+    codec->encode(&png, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->save_image_file(&png, filepath);
 }
 
 void img_fill_gradient(matrix_rgb* matrix, color_rgb basecolor)
@@ -30,45 +29,45 @@ void img_fill_gradient(matrix_rgb* matrix, color_rgb basecolor)
     }
 }
 
-void lr1_task1_img_black(unsigned width, unsigned height, std::string filepath)
+void lr1_task1_img_black(unsigned width, unsigned height, std::string filepath, image_codec* codec)
 {
     matrix_gray matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
     matrix.fill(0);
 
-    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
-    save_image_file(&png_buffer, filepath);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
+    codec->save_image_file(&png_buffer, filepath);
 }
 
-void lr1_task1_img_white(unsigned width, unsigned height, std::string filepath)
+void lr1_task1_img_white(unsigned width, unsigned height, std::string filepath, image_codec* codec)
 {
     matrix_gray matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
     matrix.fill(255);
 
-    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
-    save_image_file(&png_buffer, filepath);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
+    codec->save_image_file(&png_buffer, filepath);
 }
 
-void lr1_task1_img_red(unsigned width, unsigned height, std::string filepath)
+void lr1_task1_img_red(unsigned width, unsigned height, std::string filepath, image_codec* codec)
 {
     matrix_rgb matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
     matrix.fill(color_rgb(255, 0, 0));
 
-    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
-    save_image_file(&png_buffer, filepath);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->save_image_file(&png_buffer, filepath);
 }
 
-void lr1_task1_img_gradient(unsigned width, unsigned height, std::string filepath)
+void lr1_task1_img_gradient(unsigned width, unsigned height, std::string filepath, image_codec* codec)
 {
     matrix_rgb matrix(width, height);
     std::vector<unsigned char> png_buffer;
 
     img_fill_gradient(&matrix, color_rgb(95, 0, 237));
-    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
-    save_image_file(&png_buffer, filepath);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->save_image_file(&png_buffer, filepath);
 }

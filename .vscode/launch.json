@@ -8,7 +8,7 @@
         "name": "CUDA C++: Launch",
         "type": "cuda-gdb",
         "request": "launch",
-        "program": "${workspaceFolder}/a.out"
+        "program": "${workspaceFolder}/graphics-cuda.out"
     },
     {
         "name": "(gdb) Launch",

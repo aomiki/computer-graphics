@@ -35,11 +35,11 @@ graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
 
 #Compile CUDA implementation (target that invokes if *.o with *.cu source is required by other targets)
 %.o: %.cu
-	nvcc $(LDFLAGS) --debug -o $@ -c $^
+	nvcc $(LDFLAGS) --debug --device-debug -o $@ -c $^
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) -o $@ -c $^
+	$(CXX) $(LDFLAGS) -g -o $@ -c $^
 
 #Clean build files
 clean:
