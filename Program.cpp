@@ -20,11 +20,11 @@ int main()
 
     image_codec codec;
 
-    decode_encode_img(input_folder+"/senku.png", &codec);
+    decode_encode_img("shuttle.jpg", &codec);
 
     lr1_task1_img_black(4000, 2000, lr1_result_folder + "t1_img_black", &codec);
 
-    lr1_task1_img_white(4000, 2000, lr1_result_folder + "t1_img_white", &codec);
+    lr1_task1_img_white(10, 10, lr1_result_folder + "t1_img_white", &codec);
 
     lr1_task1_img_red(4000, 2000, lr1_result_folder + "t1_img_red", &codec);
 
@@ -47,7 +47,7 @@ void decode_encode_img(std::string filepath, image_codec* codec)
 {
     std::vector<unsigned char> img_buffer;
 
-    codec->load_image_file(&img_buffer, filepath);
+    codec->load_image_file(&img_buffer, input_folder+ "/" +filepath);
 
     matrix_rgb img_matrix;
     codec->decode(&img_buffer, &img_matrix,ImageColorScheme::IMAGE_RGB, 8);
@@ -69,7 +69,6 @@ void decode_encode_img(std::string filepath, image_codec* codec)
             }
         }
     }
-    
 
     img_buffer.clear();
     codec->encode(&img_buffer, &img_matrix, ImageColorScheme::IMAGE_RGB, 8);

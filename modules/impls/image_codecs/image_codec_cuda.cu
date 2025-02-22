@@ -4,12 +4,16 @@
 
 cudaStream_t stream;
 nvjpegHandle_t nv_handle;
+
+nvjpegJpegState_t nvjpeg_decoder_state;
+
 nvjpegEncoderState_t nv_enc_state;
 nvjpegEncoderParams_t nv_enc_params;
 
 /// @brief for debug
 nvjpegStatus_t last_status = (nvjpegStatus_t)-1;
 cudaError_t last_error = (cudaError_t)-1;
+std::string last_error_desc = "";
 
 void cuda_log(nvjpegStatus_t status)
 {
@@ -19,6 +23,7 @@ void cuda_log(nvjpegStatus_t status)
 void cuda_log(cudaError_t status)
 {
     last_error = status;
+    last_error_desc = cudaGetErrorString(status);
 }
 
 image_codec::image_codec()
@@ -39,6 +44,9 @@ image_codec::image_codec()
 
     //use the best type of JPEG encoding
     cuda_log(nvjpegEncoderParamsSetEncoding(nv_enc_params, nvjpegJpegEncoding_t::NVJPEG_ENCODING_LOSSLESS_HUFFMAN, stream));
+
+    //nvjpeg decoding
+    cuda_log(nvjpegJpegStateCreate(nv_handle, &nvjpeg_decoder_state));
 }
 
 void image_codec::encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
@@ -95,17 +103,89 @@ void image_codec::encode(std::vector<unsigned char>* img_source, matrix* img_mat
     //clean up
     cuda_log(cudaFree(nv_image.channel[0]));
 }
-        
+
+bool is_interleaved(nvjpegOutputFormat_t)
+{
+    return true;
+}
+
 void image_codec::decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
+    // Decode, Encoder format
+    nvjpegOutputFormat_t oformat = NVJPEG_OUTPUT_RGBI;
+
+    // Image buffers. 
+    unsigned char * pBuffer = NULL; 
     
+    unsigned char * dpImage = (unsigned char *)img_source->data();
+    size_t nSize = img_source->size();
+    
+    // Retrieve the componenet and size info.
+    int nComponent = 0;
+    nvjpegChromaSubsampling_t subsampling;
+    int widths[NVJPEG_MAX_COMPONENT];
+    int heights[NVJPEG_MAX_COMPONENT];
+
+    cuda_log(nvjpegGetImageInfo(nv_handle, dpImage, nSize, &nComponent, &subsampling, widths, heights));
+
+    // image resize
+    size_t pitchDesc;
+
+    // device image buffers.
+    nvjpegImage_t imgDesc;
+
+    if (is_interleaved(oformat))
+    {
+        pitchDesc = nComponent * widths[0];
+    }
+    else
+    {
+        pitchDesc = 3 * widths[0];
+    }
+
+    cuda_log(cudaMalloc(&pBuffer, pitchDesc * heights[0]));
+
+    imgDesc.channel[0] = pBuffer;
+    imgDesc.channel[1] = pBuffer + widths[0] * heights[0];
+    imgDesc.channel[2] = pBuffer + widths[0] * heights[0] * 2;
+    imgDesc.pitch[0] = (unsigned int)(is_interleaved(oformat) ? widths[0] * nComponent : widths[0]);
+    imgDesc.pitch[1] = (unsigned int)widths[0];
+    imgDesc.pitch[2] = (unsigned int)widths[0];
+
+    if (is_interleaved(oformat))
+    {
+        imgDesc.channel[3] = pBuffer + widths[0] * heights[0] * 3;
+        imgDesc.pitch[3] = (unsigned int)widths[0];
+    }
+
+    // decode by stages
+    cuda_log(nvjpegDecode(nv_handle, nvjpeg_decoder_state, dpImage, nSize, oformat, &imgDesc, NULL));
+
+    img_matrix->array.resize(pitchDesc * heights[0]);
+    unsigned char* result = new unsigned char[pitchDesc * heights[0]];
+
+    cuda_log(cudaMemcpy(img_matrix->array.data(), pBuffer, pitchDesc * heights[0], cudaMemcpyKind::cudaMemcpyDeviceToHost));
+
+    img_matrix->height = heights[0];
+    img_matrix->width = widths[0];
 }
-        
+
 void image_codec::load_image_file(std::vector<unsigned char>* img_buff, std::string image_filepath)
 {
-    std::ifstream input_file(image_filepath+".jpeg", std::ios::out | std::ios::binary);
-    input_file.read((char *)img_buff->data(), img_buff->size());
-    input_file.close();
+    std::ifstream oInputStream(image_filepath, std::ios::in | std::ios::binary | std::ios::ate);
+    if(!(oInputStream.is_open()))
+    {
+        return;
+    }
+
+    // Get the size.
+    std::streamsize nSize = oInputStream.tellg();
+    oInputStream.seekg(0, std::ios::beg);
+    
+    img_buff->resize(nSize);
+    oInputStream.read((char*)img_buff->data(), nSize);
+
+    oInputStream.close();
 }
         
 void image_codec::save_image_file(std::vector<unsigned char>* img_buff, std::string image_filepath)
