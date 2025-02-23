@@ -104,70 +104,41 @@ void image_codec::encode(std::vector<unsigned char>* img_source, matrix* img_mat
     cuda_log(cudaFree(nv_image.channel[0]));
 }
 
-bool is_interleaved(nvjpegOutputFormat_t)
-{
-    return true;
-}
-
 void image_codec::decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
-    // Decode, Encoder format
-    nvjpegOutputFormat_t oformat = NVJPEG_OUTPUT_RGBI;
-
-    // Image buffers. 
-    unsigned char * pBuffer = NULL; 
-    
-    unsigned char * dpImage = (unsigned char *)img_source->data();
-    size_t nSize = img_source->size();
-    
-    // Retrieve the componenet and size info.
+    // Info about input file
+    // number of channels in image
     int nComponent = 0;
     nvjpegChromaSubsampling_t subsampling;
+    //width and height of every channel
     int widths[NVJPEG_MAX_COMPONENT];
     int heights[NVJPEG_MAX_COMPONENT];
 
-    cuda_log(nvjpegGetImageInfo(nv_handle, dpImage, nSize, &nComponent, &subsampling, widths, heights));
+    cuda_log(nvjpegGetImageInfo(nv_handle, img_source->data(), img_source->size(), &nComponent, &subsampling, widths, heights));
 
     // image resize
-    size_t pitchDesc;
+    size_t pitch = nComponent * widths[0];
 
-    // device image buffers.
+    // Image buffer 
+    unsigned char * deviceImgBuff = NULL;
+    cuda_log(cudaMalloc(&deviceImgBuff, pitch * heights[0]));
+
+    // device image buffer.
     nvjpegImage_t imgDesc;
-
-    if (is_interleaved(oformat))
-    {
-        pitchDesc = nComponent * widths[0];
-    }
-    else
-    {
-        pitchDesc = 3 * widths[0];
-    }
-
-    cuda_log(cudaMalloc(&pBuffer, pitchDesc * heights[0]));
-
-    imgDesc.channel[0] = pBuffer;
-    imgDesc.channel[1] = pBuffer + widths[0] * heights[0];
-    imgDesc.channel[2] = pBuffer + widths[0] * heights[0] * 2;
-    imgDesc.pitch[0] = (unsigned int)(is_interleaved(oformat) ? widths[0] * nComponent : widths[0]);
-    imgDesc.pitch[1] = (unsigned int)widths[0];
-    imgDesc.pitch[2] = (unsigned int)widths[0];
-
-    if (is_interleaved(oformat))
-    {
-        imgDesc.channel[3] = pBuffer + widths[0] * heights[0] * 3;
-        imgDesc.pitch[3] = (unsigned int)widths[0];
-    }
+    imgDesc.channel[0] = deviceImgBuff;
+    imgDesc.pitch[0] = (unsigned int)(widths[0] * nComponent);
 
     // decode by stages
-    cuda_log(nvjpegDecode(nv_handle, nvjpeg_decoder_state, dpImage, nSize, oformat, &imgDesc, NULL));
+    cuda_log(nvjpegDecode(nv_handle, nvjpeg_decoder_state, img_source->data(), img_source->size(), NVJPEG_OUTPUT_RGBI, &imgDesc, NULL));
 
-    img_matrix->array.resize(pitchDesc * heights[0]);
-    unsigned char* result = new unsigned char[pitchDesc * heights[0]];
-
-    cuda_log(cudaMemcpy(img_matrix->array.data(), pBuffer, pitchDesc * heights[0], cudaMemcpyKind::cudaMemcpyDeviceToHost));
+    img_matrix->array.resize(pitch * heights[0]);
+    cuda_log(cudaMemcpy(img_matrix->array.data(), deviceImgBuff, pitch * heights[0], cudaMemcpyKind::cudaMemcpyDeviceToHost));
 
     img_matrix->height = heights[0];
     img_matrix->width = widths[0];
+
+    //clean up
+    cuda_log(cudaFree(deviceImgBuff));
 }
 
 void image_codec::load_image_file(std::vector<unsigned char>* img_buff, std::string image_filepath)
