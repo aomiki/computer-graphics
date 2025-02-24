@@ -25,9 +25,9 @@ LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos
 LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
 CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.o -g
 
-#Compile with LodePNG implementation
+#Compile with LodePNG implementation (link object files)
 graphics-lode.out: $(MODULES) $(LRS) $(LODE) Program.o
-	$(CXX) $(CXXFLAGS) $(LODE) -Wall -Wextra -pedantic -Og  -o graphics-lode.out 
+	$(CXX) $(CXXFLAGS) $(LODE) -Wall -Wextra -pedantic -Og -o graphics-lode.out   
 
 #Compile with CUDA implementation
 graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
