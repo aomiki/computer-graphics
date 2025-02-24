@@ -31,15 +31,15 @@ graphics-lode.out: $(MODULES) $(LRS) $(LODE) Program.o
 
 #Compile with CUDA implementation
 graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
-	$(CXX) $(CXXFLAGS) $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -o graphics-cuda.out 
+	$(CXX) $(CXXFLAGS) $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -Wall -Wextra -pedantic -Og -o graphics-cuda.out 
 
 #Compile CUDA implementation (target that invokes if *.o with *.cu source is required by other targets)
 %.o: %.cu
-	nvcc $(LDFLAGS) --debug -o $@ -c $^
+	nvcc $(LDFLAGS) --debug --device-debug -o $@ -c $^
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) -g -o $@ -c $^ 
+	$(CXX) $(LDFLAGS) -Wall -Wextra -pedantic -Og -g -o $@ -c $^
 
 #Clean build files
 clean:

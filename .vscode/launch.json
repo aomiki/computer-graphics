@@ -5,16 +5,10 @@
     "version": "0.2.0",
     "configurations": [
     {
-        "name": "CUDA C++: Launch",
-        "type": "cuda-gdb",
-        "request": "launch",
-        "program": "${workspaceFolder}/a.out"
-    },
-    {
         "name": "(gdb) Launch",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/graphics-lode.out",
+        "program": "${workspaceFolder}/graphics-cuda.out",
         "args": [],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
@@ -33,6 +27,13 @@
                 "ignoreFailures": true
             }
         ]
+    },
+    {
+        "name": "(cuda-gdb) Launch",
+        "type": "cuda-gdb",
+        "request": "launch",
+        "program": "${workspaceFolder}/graphics-cuda.out",
+        "cwd": "${fileDirname}"
     }
     ]
 }

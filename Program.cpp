@@ -14,30 +14,33 @@ const std::string lr1_result_folder = result_folder + "/LR1/";
 
 
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color);
-void decode_encode_img(std::string filepath);
+void decode_encode_img(std::string filepath, image_codec* codec);
 
 int main()
 {
     std::cout << "Shellow from SSAU!" << std::endl;
 
-    decode_encode_img(input_folder+"/senku.png");
+    image_codec codec;
 
-    lr1_task1_img_black(4000, 2000, lr1_result_folder + "t1_img_black");
+    decode_encode_img("shuttle.jpg", &codec);
 
-    lr1_task1_img_white(4000, 2000, lr1_result_folder + "t1_img_white");
+    lr1_task1_img_black(4000, 2000, lr1_result_folder + "t1_img_black", &codec);
 
-    lr1_task1_img_red(4000, 2000, lr1_result_folder + "t1_img_red");
+    lr1_task1_img_white(10, 10, lr1_result_folder + "t1_img_white", &codec);
 
-    lr1_task1_img_gradient(255, 255, lr1_result_folder + "t1_img_gradient");
+    lr1_task1_img_red(4000, 2000, lr1_result_folder + "t1_img_red", &codec);
+
+    lr1_task1_img_gradient(255, 255, lr1_result_folder + "t1_img_gradient", &codec);
     
-    lr1_task2_line(dotted_line_count, lr1_result_folder + "t2_img_line_interp_count");
-    lr1_task2_line(draw_line_interpolation, lr1_result_folder + "t2_img_line_interp_autocount");
-    lr1_task2_line(draw_line_interpolation_xloop, lr1_result_folder + "t2_img_line_interp_xloop");
-    lr1_task2_line(draw_line_interpolation_xloop_fixX, lr1_result_folder + "t2_img_line_interp_xloop_fixX");
-    lr1_task2_line(draw_line_interpolation_xloop_fixXfixY, lr1_result_folder + "t2_img_line_interp_xloop_fixXfixY");
-    lr1_task2_line(draw_line_dy, lr1_result_folder + "t2_img_line_dy");
-    lr1_task2_line(draw_line_dy_rev1, lr1_result_folder + "t2_img_line_dy_rev1");
-    lr1_task2_line(draw_line, lr1_result_folder + "t2_img_line_bresenham");
+    lr1_task2_line(dotted_line_count, lr1_result_folder + "t2_img_line_interp_count", &codec);
+    lr1_task2_line(draw_line_interpolation, lr1_result_folder + "t2_img_line_interp_autocount", &codec);
+    lr1_task2_line(draw_line_interpolation_xloop, lr1_result_folder + "t2_img_line_interp_xloop", &codec);
+    lr1_task2_line(draw_line_interpolation_xloop_fixX, lr1_result_folder + "t2_img_line_interp_xloop_fixX", &codec);
+    lr1_task2_line(draw_line_interpolation_xloop_fixXfixY, lr1_result_folder + "t2_img_line_interp_xloop_fixXfixY", &codec);
+    lr1_task2_line(draw_line_dy, lr1_result_folder + "t2_img_line_dy", &codec);
+    lr1_task2_line(draw_line_dy_rev1, lr1_result_folder + "t2_img_line_dy_rev1", &codec);
+    lr1_task2_line(draw_line, lr1_result_folder + "t2_img_line_bresenham", &codec);
+    codec.~image_codec();
 
     std::cout << "that's it" << std::endl;
 
@@ -49,14 +52,14 @@ int main()
 
 }
 
-void decode_encode_img(std::string filepath)
+void decode_encode_img(std::string filepath, image_codec* codec)
 {
     std::vector<unsigned char> img_buffer;
 
-    load_image_file(&img_buffer, filepath);
+    codec->load_image_file(&img_buffer, input_folder+ "/" +filepath);
 
     matrix_rgb img_matrix;
-    decode(&img_buffer, &img_matrix,ImageColorScheme::IMAGE_RGB, 8);
+    codec->decode(&img_buffer, &img_matrix,ImageColorScheme::IMAGE_RGB, 8);
 
     unsigned int vert_boundary = (int)img_matrix.height/10;
     unsigned int horiz_boundary = (int)img_matrix.width/10;
@@ -75,12 +78,11 @@ void decode_encode_img(std::string filepath)
             }
         }
     }
-    
 
     img_buffer.clear();
-    encode(&img_buffer, &img_matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->encode(&img_buffer, &img_matrix, ImageColorScheme::IMAGE_RGB, 8);
 
-    save_image_file(&img_buffer, result_folder+"/"+filepath);
+    codec->save_image_file(&img_buffer, result_folder+"/"+filepath);
 }
 
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color)
