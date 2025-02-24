@@ -3,13 +3,15 @@
 #include "LR1.h"
 #include "image_draw_lines.h"
 
+
 #include <iostream>
 #include <vector>
 #include <string>
 
-std::string result_folder = "output";
-std::string input_folder = "input";
-std::string lr1_result_folder = result_folder + "/LR1/";
+const std::string result_folder = "output";
+const std::string input_folder = "input";
+const std::string lr1_result_folder = result_folder + "/LR1/";
+
 
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color);
 void decode_encode_img(std::string filepath);
@@ -38,6 +40,13 @@ int main()
     lr1_task2_line(draw_line, lr1_result_folder + "t2_img_line_bresenham");
 
     std::cout << "that's it" << std::endl;
+
+    lr1_task3_vertices(lr1_result_folder + "t3_vertices.txt", input_folder + "/" + "model.obj");
+    lr1_task4_draw_vertices(1000, 1000, input_folder + "/" + "model.obj", lr1_result_folder + "t4_draw_vertices");
+    lr1_task5_polygons(lr1_result_folder + "t5_polygons.txt", input_folder + "/" + "model.obj");
+    lr1_task6_draw_object(1000, 1000, input_folder + "/" + "model.obj", lr1_result_folder + "t6_object");
+    
+
 }
 
 void decode_encode_img(std::string filepath)
@@ -79,4 +88,5 @@ void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, c
     unsigned count = 1000;
     draw_line_interpolation_count(matrix, from, to, count, line_color);
 }
+
 

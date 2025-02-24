@@ -25,9 +25,9 @@ LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos
 LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
 CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.o -g
 
-#Compile with LodePNG implementation
+#Compile with LodePNG implementation (link object files)
 graphics-lode.out: $(MODULES) $(LRS) $(LODE) Program.o
-	$(CXX) $(CXXFLAGS) $(LODE) -o graphics-lode.out 
+	$(CXX) $(CXXFLAGS) $(LODE) -Wall -Wextra -pedantic -Og -o graphics-lode.out   
 
 #Compile with CUDA implementation
 graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
@@ -39,11 +39,11 @@ graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) -o $@ -c $^
+	$(CXX) $(LDFLAGS) -g -o $@ -c $^ 
 
 #Clean build files
 clean:
-	rm -f $(MODULES) $(LRS) $(LODE) $(CUDA_MODULES) graphics-lode.out graphics-cuda.out
+	rm -f $(MODULES) $(LRS) $(LODE) $(CUDA_MODULES) Program.o graphics-lode.out graphics-cuda.out
 
 #Clean program output files
 clean-output-LR1:
