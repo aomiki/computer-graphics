@@ -84,7 +84,7 @@ void lr1_task3_vertices(std::string filepath, std::string in_filename)
     std::vector <vertex> vertices;
     readObj(in_filename, &vertices);
     ofstream out(filepath);
-    for (int i = 0; i < vertices.size(); i++)
+    for (size_t i = 0; i < vertices.size(); i++)
     {
         out << vertices[i].x << " " <<vertices[i].y << " " << vertices[i].z << endl;
     }
@@ -96,7 +96,7 @@ void lr1_task5_polygons(std::string filepath, std::string in_filename)
     std::vector <polygon> polygons;
     readObj(in_filename, nullptr, &polygons);
     ofstream out(filepath);
-    for (int i = 0; i < polygons.size(); i++)
+    for (size_t i = 0; i < polygons.size(); i++)
     {
         out << polygons[i].vertex_index1 << " " <<polygons[i].vertex_index2 << " " << polygons[i].vertex_index3 << endl;
     }
@@ -104,13 +104,13 @@ void lr1_task5_polygons(std::string filepath, std::string in_filename)
 }
 
 
-void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath)
+void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath, image_codec* codec)
 {
     matrix_rgb matrix(width, height);
     matrix.fill(color_rgb(255, 255, 255));
     std::vector <vertex> vertices;
     readObj(in_filename, &vertices);
-    for (int i = 0; i < vertices.size(); i++)
+    for (size_t i = 0; i < vertices.size(); i++)
     {
          int x = static_cast<int>(5000 * vertices[i].x + 500);
          int y = static_cast<int>(height - (5000 * vertices[i].y + 500));
@@ -118,20 +118,20 @@ void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_fil
         
     }
     std::vector<unsigned char> png_buffer;
-    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
-    save_image_file(&png_buffer, filepath);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->save_image_file(&png_buffer, filepath);
     
 }
 
 
-void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filename,std::string filepath)
+void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filename,std::string filepath, image_codec* codec)
 {
     matrix_rgb matrix(width, height);
     matrix.fill(color_rgb(255, 255, 255));
     std::vector <vertex> vertices;
     std::vector <polygon> polygons;
     readObj(in_filename, &vertices, &polygons);
-    for (int i = 0; i < polygons.size(); i++)
+    for (size_t i = 0; i < polygons.size(); i++)
     {
         matrix_coord v1{
             static_cast<unsigned>(std::round(5000*vertices[polygons[i].vertex_index1-1].x + 500)),
@@ -154,6 +154,6 @@ void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filen
 
     }
     std::vector<unsigned char> png_buffer;
-    encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
-    save_image_file(&png_buffer, filepath);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->save_image_file(&png_buffer, filepath);
 }
