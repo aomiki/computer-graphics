@@ -88,5 +88,3 @@ void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, c
     unsigned count = 1000;
     draw_line_interpolation_count(matrix, from, to, count, line_color);
 }
-
-
