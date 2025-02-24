@@ -2,15 +2,15 @@
 #include "image_codec.h"
 #include "LR1.h"
 #include "image_draw_lines.h"
-
-
 #include <iostream>
 #include <vector>
 #include <string>
+#include <filesystem>
+namespace fs = std::filesystem;
 
-const std::string result_folder = "output";
-const std::string input_folder = "input";
-const std::string lr1_result_folder = result_folder + "/LR1/";
+const fs::path result_folder("output");
+const fs::path input_folder ("input");
+const fs::path lr1_result_folder = result_folder / "LR1";
 
 
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color);
@@ -24,29 +24,29 @@ int main()
 
     decode_encode_img("shuttle.jpg", &codec);
 
-    lr1_task1_img_black(4000, 2000, lr1_result_folder + "t1_img_black", &codec);
+    lr1_task1_img_black(4000, 2000, lr1_result_folder / "t1_img_black", &codec);
 
-    lr1_task1_img_white(10, 10, lr1_result_folder + "t1_img_white", &codec);
+    lr1_task1_img_white(10, 10, lr1_result_folder / "t1_img_white", &codec);
 
-    lr1_task1_img_red(4000, 2000, lr1_result_folder + "t1_img_red", &codec);
+    lr1_task1_img_red(4000, 2000, lr1_result_folder / "t1_img_red", &codec);
 
-    lr1_task1_img_gradient(255, 255, lr1_result_folder + "t1_img_gradient", &codec);
+    lr1_task1_img_gradient(255, 255, lr1_result_folder / "t1_img_gradient", &codec);
     
-    lr1_task2_line(dotted_line_count, lr1_result_folder + "t2_img_line_interp_count", &codec);
-    lr1_task2_line(draw_line_interpolation, lr1_result_folder + "t2_img_line_interp_autocount", &codec);
-    lr1_task2_line(draw_line_interpolation_xloop, lr1_result_folder + "t2_img_line_interp_xloop", &codec);
-    lr1_task2_line(draw_line_interpolation_xloop_fixX, lr1_result_folder + "t2_img_line_interp_xloop_fixX", &codec);
-    lr1_task2_line(draw_line_interpolation_xloop_fixXfixY, lr1_result_folder + "t2_img_line_interp_xloop_fixXfixY", &codec);
-    lr1_task2_line(draw_line_dy, lr1_result_folder + "t2_img_line_dy", &codec);
-    lr1_task2_line(draw_line_dy_rev1, lr1_result_folder + "t2_img_line_dy_rev1", &codec);
-    lr1_task2_line(draw_line, lr1_result_folder + "t2_img_line_bresenham", &codec);
+    lr1_task2_line(dotted_line_count, lr1_result_folder / "t2_img_line_interp_count", &codec);
+    lr1_task2_line(draw_line_interpolation, lr1_result_folder / "t2_img_line_interp_autocount", &codec);
+    lr1_task2_line(draw_line_interpolation_xloop, lr1_result_folder / "t2_img_line_interp_xloop", &codec);
+    lr1_task2_line(draw_line_interpolation_xloop_fixX, lr1_result_folder / "t2_img_line_interp_xloop_fixX", &codec);
+    lr1_task2_line(draw_line_interpolation_xloop_fixXfixY, lr1_result_folder / "t2_img_line_interp_xloop_fixXfixY", &codec);
+    lr1_task2_line(draw_line_dy, lr1_result_folder / "t2_img_line_dy", &codec);
+    lr1_task2_line(draw_line_dy_rev1, lr1_result_folder / "t2_img_line_dy_rev1", &codec);
+    lr1_task2_line(draw_line, lr1_result_folder / "t2_img_line_bresenham", &codec);
+
+    lr1_task3_vertices(lr1_result_folder / "t3_vertices.txt", input_folder / "model.obj");
+    lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", &codec);
+    lr1_task5_polygons(lr1_result_folder / "t5_polygons.txt", input_folder / "model.obj");
+    lr1_task6_draw_object(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t6_object", &codec);
+
     codec.~image_codec();
-
-    lr1_task3_vertices(lr1_result_folder + "t3_vertices.txt", input_folder + "/" + "model.obj");
-    lr1_task4_draw_vertices(1000, 1000, input_folder + "/" + "model.obj", lr1_result_folder + "t4_draw_vertices", &codec);
-    lr1_task5_polygons(lr1_result_folder + "t5_polygons.txt", input_folder + "/" + "model.obj");
-    lr1_task6_draw_object(1000, 1000, input_folder + "/" + "model.obj", lr1_result_folder + "t6_object", &codec);
-
     std::cout << "that's it" << std::endl;
 }
 
@@ -54,7 +54,7 @@ void decode_encode_img(std::string filepath, image_codec* codec)
 {
     std::vector<unsigned char> img_buffer;
 
-    codec->load_image_file(&img_buffer, input_folder+ "/" +filepath);
+    codec->load_image_file(&img_buffer, input_folder / filepath);
 
     matrix_rgb img_matrix;
     codec->decode(&img_buffer, &img_matrix,ImageColorScheme::IMAGE_RGB, 8);
@@ -80,7 +80,7 @@ void decode_encode_img(std::string filepath, image_codec* codec)
     img_buffer.clear();
     codec->encode(&img_buffer, &img_matrix, ImageColorScheme::IMAGE_RGB, 8);
 
-    codec->save_image_file(&img_buffer, result_folder+"/"+filepath);
+    codec->save_image_file(&img_buffer, result_folder / filepath);
 }
 
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color)

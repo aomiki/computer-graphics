@@ -112,17 +112,15 @@ void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_fil
     readObj(in_filename, &vertices);
     for (size_t i = 0; i < vertices.size(); i++)
     {
-         int x = static_cast<int>(5000 * vertices[i].x + 500);
-         int y = static_cast<int>(height - (5000 * vertices[i].y + 500));
-         matrix.set(x, y, color_rgb(95, 0, 237));
-        
+        int x = static_cast<int>(5000 * vertices[i].x + 500);
+        int y = static_cast<int>(height - (5000 * vertices[i].y + 500));
+        matrix.set(x, y, color_rgb(95, 0, 237));
     }
+
     std::vector<unsigned char> png_buffer;
     codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
-    codec->save_image_file(&png_buffer, filepath);
-    
+    codec->save_image_file(&png_buffer, filepath);    
 }
-
 
 void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filename,std::string filepath, image_codec* codec)
 {
@@ -136,23 +134,21 @@ void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filen
         matrix_coord v1{
             static_cast<unsigned>(std::round(5000*vertices[polygons[i].vertex_index1-1].x + 500)),
             static_cast<unsigned>(std::round(height - (5000*vertices[polygons[i].vertex_index1-1].y + 500)))
-            };
+        };
         matrix_coord v2{
             static_cast<unsigned>(std::round(5000*vertices[polygons[i].vertex_index2-1].x + 500)),
             static_cast<unsigned>(std::round(height - (5000*vertices[polygons[i].vertex_index2-1].y + 500)))
-            };
+        };
         matrix_coord v3{
             static_cast<unsigned>(std::round(5000*vertices[polygons[i].vertex_index3-1].x + 500)),
             static_cast<unsigned>(std::round(height - (5000*vertices[polygons[i].vertex_index3-1].y + 500)))
-            };
+        };
 
         draw_line(&matrix, v1, v2, color_rgb(95, 0, 237));
         draw_line(&matrix, v2, v3, color_rgb(95, 0, 237));
         draw_line(&matrix, v3, v1, color_rgb(95, 0, 237));
-
-
-
     }
+
     std::vector<unsigned char> png_buffer;
     codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
     codec->save_image_file(&png_buffer, filepath);

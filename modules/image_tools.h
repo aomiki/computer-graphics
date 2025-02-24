@@ -57,12 +57,12 @@ class matrix_rgb : public matrix_color<color_rgb>
         void virtual fill(color_rgb value);
 };
 
-class matrix_gray : public matrix_color<char>
+class matrix_gray : public matrix_color<unsigned char>
 {
     public:
-        matrix_gray(unsigned width, unsigned height): matrix_color<char>(width, height) {}
-        void virtual set(unsigned x, unsigned y, char color);
-        void virtual fill(char value);
+        matrix_gray(unsigned width, unsigned height): matrix_color<unsigned char>(width, height) {}
+        void virtual set(unsigned x, unsigned y, unsigned char color);
+        void virtual fill(unsigned char value);
 };
 
 #include "impls/image_tools.ipp"

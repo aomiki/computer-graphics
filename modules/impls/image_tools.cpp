@@ -1,6 +1,6 @@
 #include "image_tools.h"
 
-void matrix_gray::fill(char value)
+void matrix_gray::fill(unsigned char value)
 {
     for (size_t i = 0; i < width; i++)
     {
@@ -11,7 +11,7 @@ void matrix_gray::fill(char value)
     }
 }
 
-void matrix_gray::set(unsigned x, unsigned y, char color)
+void matrix_gray::set(unsigned x, unsigned y, unsigned char color)
 {
     size_t index = width*y+x;
     array[index] = color;
