@@ -4,6 +4,16 @@ using namespace std;
 
 
 struct vertex{
+     vertex()
+     {}
+
+     vertex(double x, double y, double z = 0)
+     {
+          this->x = x;
+          this->y = y;
+          this->z = z;
+     }
+
      double x;
      double y;
      double z;

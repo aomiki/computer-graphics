@@ -1,16 +1,22 @@
 #include "lodepng.h"
 #include "image_codec.h"
 #include "LR1.h"
+#include "LR2.h"
 #include "image_draw_lines.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
 #include <filesystem>
+
+#define LR2
+
 namespace fs = std::filesystem;
 
 const fs::path result_folder("output");
 const fs::path input_folder ("input");
 const fs::path lr1_result_folder = result_folder / "LR1";
+const fs::path lr2_result_folder = result_folder / "LR2";
 
 
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color);
@@ -22,6 +28,7 @@ int main()
 
     image_codec codec;
 
+    #ifdef LR1
     decode_encode_img("shuttle.jpg", &codec);
 
     lr1_task1_img_black(4000, 2000, lr1_result_folder / "t1_img_black", &codec);
@@ -45,6 +52,15 @@ int main()
     lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", &codec);
     lr1_task5_polygons(lr1_result_folder / "t5_polygons.txt", input_folder / "model.obj");
     lr1_task6_draw_object(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t6_object", &codec);
+
+    #endif
+
+    #ifdef LR2
+    lr2_task9_single_triag(lr2_result_folder / "t9_single_triag", &codec);
+    lr2_task9_single_triag_outofbound(lr2_result_folder / "t9_single_triag_outofbound", &codec);
+    lr2_task9_single_triag_fulloutofbound(lr2_result_folder / "t9_single_triag_fulloutofbound", &codec);
+    lr2_task9_multiple_triags_big(lr2_result_folder / "t9_multiple_triags_big", &codec);
+    #endif
 
     codec.~image_codec();
     std::cout << "that's it" << std::endl;

@@ -44,6 +44,8 @@ class matrix_color : public matrix {
     matrix_color() : matrix() {}
     matrix_color(unsigned width, unsigned height) : matrix(width, height) {}
     void virtual set(unsigned x, unsigned y, E color) = 0;
+    void virtual set(matrix_coord coord, E color) = 0;
+    E virtual get(unsigned x, unsigned y) = 0;
 
     void virtual fill(E value);
 };
@@ -54,6 +56,8 @@ class matrix_rgb : public matrix_color<color_rgb>
         matrix_rgb(): matrix_color<color_rgb>() {}
         matrix_rgb(unsigned width, unsigned height): matrix_color<color_rgb>(width, height) {}
         void virtual set(unsigned x, unsigned y, color_rgb color);
+        void virtual set(matrix_coord coord, color_rgb color);
+        color_rgb virtual get(unsigned x, unsigned y);
         void virtual fill(color_rgb value);
 };
 
@@ -62,6 +66,8 @@ class matrix_gray : public matrix_color<unsigned char>
     public:
         matrix_gray(unsigned width, unsigned height): matrix_color<unsigned char>(width, height) {}
         void virtual set(unsigned x, unsigned y, unsigned char color);
+        void virtual set(matrix_coord coord, unsigned char color);
+        unsigned char virtual get(unsigned x, unsigned y);
         void virtual fill(unsigned char value);
 };
 

@@ -27,11 +27,11 @@ CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.o -g
 
 #Compile with LodePNG implementation (link object files)
 graphics-lode.out: $(MODULES) $(LRS) $(LODE) Program.o
-	$(CXX) $(CXXFLAGS) $(LODE) -Wall -Wextra -pedantic -Og -o graphics-lode.out   
+	$(CXX) $(CXXFLAGS) $(LODE) -Wall -Wextra -pedantic -O0 -o graphics-lode.out   
 
 #Compile with CUDA implementation
 graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
-	$(CXX) $(CXXFLAGS) $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -Wall -Wextra -pedantic -Og -o graphics-cuda.out 
+	$(CXX) $(CXXFLAGS) $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -Wall -Wextra -pedantic -O0 -o graphics-cuda.out 
 
 #Compile CUDA implementation (target that invokes if *.o with *.cu source is required by other targets)
 %.o: %.cu
@@ -39,7 +39,7 @@ graphics-cuda.out: $(MODULES) $(LRS) $(CUDA_MODULES) Program.o
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) -Wall -Wextra -pedantic -Og -g -o $@ -c $^
+	$(CXX) $(LDFLAGS) -Wall -Wextra -pedantic -O0 -g -o $@ -c $^
 
 #Clean build files
 clean:

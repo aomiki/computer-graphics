@@ -8,3 +8,5 @@ Draws color:
 Draws lines:
 
 ![star](examples/t2_img_line_bresenham_cuda.jpeg)
+
+Алгоритм Ву
