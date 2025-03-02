@@ -49,7 +49,7 @@ image_codec::image_codec()
     cuda_log(nvjpegJpegStateCreate(nv_handle, &nvjpeg_decoder_state));
 }
 
-void image_codec::encode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
+void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
     // code taken from example: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
 
@@ -94,9 +94,9 @@ void image_codec::encode(std::vector<unsigned char>* img_source, matrix* img_mat
     cuda_log(nvjpegEncodeRetrieveBitstream(nv_handle, nv_enc_state, NULL, &length, stream));
     // get stream itself
     cuda_log(cudaStreamSynchronize(stream));
-    img_source->clear();
-    img_source->resize(length);
-    cuda_log(nvjpegEncodeRetrieveBitstream(nv_handle, nv_enc_state, img_source->data(), &length, 0));
+    img_buffer->clear();
+    img_buffer->resize(length);
+    cuda_log(nvjpegEncodeRetrieveBitstream(nv_handle, nv_enc_state, img_buffer->data(), &length, 0));
 
     cuda_log(cudaStreamSynchronize(stream));
 
