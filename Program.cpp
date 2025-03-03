@@ -9,7 +9,7 @@
 #include <string>
 #include <filesystem>
 
-#define LR2
+#define LR1
 
 namespace fs = std::filesystem;
 

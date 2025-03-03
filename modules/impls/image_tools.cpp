@@ -1,7 +1,16 @@
 #include "image_tools.h"
+#include "matrix_routines.h"
 
 void matrix_gray::fill(unsigned char value)
 {
+    #ifdef CUDA_IMPL
+
+    unsigned char values[1] = { value };
+    array.resize(width * height);
+    fillInterlaced(array.data(), array.size(), values, 1);
+
+    #else
+
     for (size_t i = 0; i < width; i++)
     {
         for (size_t j = 0; j < height; j++)
@@ -9,6 +18,8 @@ void matrix_gray::fill(unsigned char value)
             array.push_back(value);
         }
     }
+
+    #endif
 }
 
 void matrix_gray::set(unsigned x, unsigned y, unsigned char color)
@@ -30,6 +41,14 @@ unsigned char matrix_gray::get(unsigned x, unsigned y)
 
 void matrix_rgb::fill(color_rgb value)
 {
+    #ifdef CUDA_IMPL
+
+    unsigned char values[3] = { value.red, value.green, value.blue };
+    array.resize(width * height * 3);
+    fillInterlaced(array.data(), array.size(), values, 3);
+
+    #else
+
     for (size_t i = 0; i < width; i++)
     {
         for (size_t j = 0; j < height; j++)
@@ -39,6 +58,8 @@ void matrix_rgb::fill(color_rgb value)
             array.push_back(value.blue);
         }
     }
+
+    #endif
 }
 
 void matrix_rgb::set(unsigned x, unsigned y, color_rgb color)
