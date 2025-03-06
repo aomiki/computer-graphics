@@ -7,6 +7,9 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-I/opt/cuda/include/",
+                "-I ${workspaceFolder}/modules/",
+                "-I ${workspaceFolder}/LRs/",
+                "-I ${workspaceFolder}/modules/hw_accel",
                 "-g",
                 "${file}",
                 "-o",

@@ -1,86 +1,46 @@
 #include "image_tools.h"
 #include "matrix_routines.h"
 
-void matrix_gray::fill(unsigned char value)
+inline unsigned int matrix::get_interlaced_index(unsigned int x, unsigned int y)
 {
-    #ifdef CUDA_IMPL
-
-    unsigned char values[1] = { value };
-    array.resize(width * height);
-    fillInterlaced(array.data(), array.size(), values, 1);
-
-    #else
-
-    for (size_t i = 0; i < width; i++)
-    {
-        for (size_t j = 0; j < height; j++)
-        {
-            array.push_back(value);
-        }
-    }
-
-    #endif
+    return (width*y+x)*COMPONENTS_NUM;
 }
 
-void matrix_gray::set(unsigned x, unsigned y, unsigned char color)
+unsigned char* matrix::get(unsigned int x, unsigned int y)
 {
-    set(matrix_coord(x,y), color);
+    return array.data() + get_interlaced_index(x, y);
 }
 
-void matrix_gray::set(matrix_coord coord, unsigned char color)
+unsigned char* matrix::get_c_arr_interlaced()
 {
-    size_t index = width*coord.y+coord.x;
-    array[index] = color;
+    return array.data();
 }
 
-unsigned char matrix_gray::get(unsigned x, unsigned y)
+unsigned int matrix::size_interlaced()
 {
-    size_t index = width*y+x;
-    return array[index];
+    return array.size();
 }
 
-void matrix_rgb::fill(color_rgb value)
+
+void matrix_gray::element_to_c_arr(unsigned char* buffer, unsigned char value)
 {
-    #ifdef CUDA_IMPL
-
-    unsigned char values[3] = { value.red, value.green, value.blue };
-    array.resize(width * height * 3);
-    fillInterlaced(array.data(), array.size(), values, 3);
-
-    #else
-
-    for (size_t i = 0; i < width; i++)
-    {
-        for (size_t j = 0; j < height; j++)
-        {
-            array.push_back(value.red);
-            array.push_back(value.green);
-            array.push_back(value.blue);
-        }
-    }
-
-    #endif
+    buffer[0] = value;
 }
 
-void matrix_rgb::set(unsigned x, unsigned y, color_rgb color)
+unsigned char matrix_gray::c_arr_to_element(unsigned char *buffer)
 {
-    set(matrix_coord(x,y), color);
-};
+    return buffer[0];
+}
 
-void matrix_rgb::set(matrix_coord coord, color_rgb color)
+
+void matrix_rgb::element_to_c_arr(unsigned char* buffer, color_rgb value)
 {
-    size_t index = (width*coord.y+coord.x)*3;
+    buffer[0] = value.red;
+    buffer[1] = value.green;
+    buffer[2] = value.blue;
+}
 
-    (array)[index] = color.red;
-    (array)[index+1] = color.green;
-    (array)[index+2] = color.blue;
-};
-
-color_rgb matrix_rgb::get(unsigned x, unsigned y)
+color_rgb matrix_rgb::c_arr_to_element(unsigned char *buffer)
 {
-    size_t index = (width*y+x)*3;
-
-    color_rgb color((array)[index], (array)[index+1], (array)[index+2]);
-
-    return color;
-};
+    return color_rgb(buffer[0], buffer[1], buffer[2]);
+}

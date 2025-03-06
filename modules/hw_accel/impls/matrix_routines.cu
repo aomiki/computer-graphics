@@ -1,5 +1,6 @@
 #include "matrix_routines.h"
 #include <stdio.h>
+#include <image_tools.h>
 
 cudaError_t LAST_CUDA_ERROR = cudaSuccess;
 
@@ -21,8 +22,12 @@ __global__ void kernel_fillInterlaced(unsigned char* arr, unsigned int n_arr, un
     arr[t_id] = components[threadIdx.y];
 }
 
-void fillInterlaced(unsigned char *arr, const unsigned int n_arr, unsigned char* components, const unsigned int n_comps)
+void fillInterlaced(matrix* m, unsigned char* components)
 {
+    unsigned char *arr = m->get_c_arr_interlaced();
+    const unsigned int n_arr = m->size_interlaced();
+    const unsigned int n_comps = m->COMPONENTS_NUM;
+
     int n_arr_1comp = n_arr/n_comps; //components are calculated separatly
     int max_threads_per_row = (int)(1024/n_comps); //gonna have number of rows in a block = number of components
 

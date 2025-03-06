@@ -103,7 +103,6 @@ void lr1_task5_polygons(std::string filepath, std::string in_filename)
     out.close();
 }
 
-
 void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath, image_codec* codec)
 {
     matrix_rgb matrix(width, height);
