@@ -29,9 +29,8 @@ void img_fill_gradient(matrix_rgb* matrix, color_rgb basecolor)
     {
         for (size_t j = 0; j < matrix->height; j++)
         {
-            matrix->array.push_back(basecolor.red);
-            matrix->array.push_back(j);
-            matrix->array.push_back(basecolor.blue);
+            basecolor.green = j;
+            matrix->set(i, j, basecolor);
         }
     }
 }

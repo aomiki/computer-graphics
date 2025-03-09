@@ -3,10 +3,8 @@
 template<typename E>
 void matrix_color<E>::fill(E value)
 {
-    array.resize(width * height * 3);
-
     #ifdef CUDA_IMPL
-    unsigned char* c_value = new unsigned char[COMPONENTS_NUM];
+    unsigned char* c_value = new unsigned char[components_num];
     element_to_c_arr(c_value, value);
 
     fillInterlaced(this, c_value);
@@ -48,14 +46,18 @@ void matrix_color<E>::set(unsigned x, unsigned y, E value)
     element_to_c_arr(cell, value);
 }
 
-inline matrix::matrix(unsigned int components_num, unsigned width, unsigned height) : COMPONENTS_NUM(components_num)
-{
-    this->height = height;
-    this->width = width;
-}
-
-inline matrix::matrix(unsigned int components_num) : COMPONENTS_NUM(components_num)
+__matrix_attr__ inline matrix::matrix(unsigned int components_num, unsigned width, unsigned height)
 {
     this->height = 0;
     this->width = 0;
+    this->components_num = components_num;
+
+    resize(width, height);
+}
+
+__matrix_attr__ inline matrix::matrix(unsigned int components_num)
+{
+    this->height = 0;
+    this->width = 0;
+    this->components_num = components_num;
 }

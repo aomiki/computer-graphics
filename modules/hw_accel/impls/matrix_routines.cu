@@ -9,45 +9,78 @@ static void cuda_log(cudaError_t err)
     LAST_CUDA_ERROR = err;
 }
 
-__global__ void kernel_fillInterlaced(unsigned char* arr, unsigned int n_arr, unsigned char* components, unsigned int n_comp)
+__global__ void kernel_fillInterlaced(matrix* m, unsigned char* components)
 {
-    int t_id = (threadIdx.x + blockDim.x * blockIdx.x) * n_comp;
-    t_id += threadIdx.y; //offset for components of RGB
+    unsigned int x = threadIdx.x + blockDim.x * blockIdx.x;
+    unsigned int y = threadIdx.y + blockDim.y * blockIdx.y;
 
-    if (t_id >= n_arr)
+    if (x >= m->width || y >= m->height)
         return;
-    
+
    // printf("Index: %d (Block (%d, %d), Thread (%d, %d)), Component element: %d\n", t_id, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, components[threadIdx.y]);
 
-    arr[t_id] = components[threadIdx.y];
+    m->get(x, y)[threadIdx.z] = components[threadIdx.z];
 }
 
+matrix* transferMatrixToDevice(matrix* h_m)
+{
+    matrix* d_m;
+    unsigned char* h_arr = h_m->get_arr_interlaced();
+    unsigned char* d_arr;
+
+    cuda_log(cudaMalloc(&d_m,  sizeof(matrix)));
+    cuda_log(cudaMalloc(&d_arr, h_m->size_interlaced()));
+    cuda_log(cudaMemcpy(d_arr, h_arr, h_m->size_interlaced(), cudaMemcpyHostToDevice));
+    h_m->set_arr_interlaced(d_arr);
+
+    cuda_log(cudaMemcpy(d_m, h_m, sizeof(matrix), cudaMemcpyHostToDevice));
+
+    h_m->set_arr_interlaced(h_arr);
+
+    return d_m;
+}
+
+void transferMatrixDataToHost(matrix* h_m, matrix* d_m, bool do_free = true)
+{
+    unsigned char* h_arr = h_m->get_arr_interlaced();
+
+    cuda_log(cudaMemcpy(h_m, d_m, sizeof(matrix), cudaMemcpyDeviceToHost));
+    cuda_log(cudaMemcpy(h_arr, h_m->get_arr_interlaced(), h_m->size_interlaced(), cudaMemcpyDeviceToHost));
+
+    if (do_free)
+    {
+        cudaFree(h_m->get_arr_interlaced());
+        cudaFree(d_m);
+    }
+
+    h_m->set_arr_interlaced(h_arr);
+}
+
+/// @brief Расположение элементов будет - по оси x = ось x матрицы, по оси y = ось y матрицы, по оси z = компоненты каждого элемента матрицы
+/// @param m 
+/// @param components Значение которое нужно установить
 void fillInterlaced(matrix* m, unsigned char* components)
 {
-    unsigned char *arr = m->get_c_arr_interlaced();
-    const unsigned int n_arr = m->size_interlaced();
-    const unsigned int n_comps = m->COMPONENTS_NUM;
+    int blocksize_2d = (int)(1024/m->components_num);
+    int blocksize_1d = (int)sqrt(blocksize_2d);
 
-    int n_arr_1comp = n_arr/n_comps; //components are calculated separatly
-    int max_threads_per_row = (int)(1024/n_comps); //gonna have number of rows in a block = number of components
+    int blocksnum_x = (int)(m->width / blocksize_1d + 1);
+    int blocksnum_y = (int)(m->height / blocksize_1d + 1);
 
-    int threads_per_row = n_arr_1comp < max_threads_per_row? n_arr_1comp : max_threads_per_row; //what's bigger: arr size or max block size?
-    dim3 blockSize(threads_per_row, n_comps);
+    dim3 blockSize(blocksize_1d, blocksize_1d, m->components_num);
+    dim3 gridSize(blocksnum_x, blocksnum_y);
 
-    float f_blockNum = n_arr_1comp/(float)threads_per_row;
-    int blockNum = f_blockNum == (int)f_blockNum?  (int)f_blockNum : (int)(f_blockNum+1); //if threads fit in blocks perfectly, just round. Otherwise add 1.
+    matrix* d_m = transferMatrixToDevice(m);
 
-    unsigned char* d_arr;
     unsigned char* d_vals;
-    cuda_log(cudaMalloc(&d_arr, n_arr * sizeof(unsigned char)));
-    cuda_log(cudaMalloc(&d_vals, n_comps * sizeof(unsigned char)));
-    cuda_log(cudaMemcpy(d_vals, components, n_comps*sizeof(unsigned char), cudaMemcpyHostToDevice));
+    cuda_log(cudaMalloc(&d_vals, m->components_num * sizeof(unsigned char)));
+    cuda_log(cudaMemcpy(d_vals, components, m->components_num * sizeof(unsigned char), cudaMemcpyHostToDevice));
 
-    kernel_fillInterlaced<<<blockNum, blockSize>>>(d_arr, n_arr, d_vals, n_comps);
+    kernel_fillInterlaced<<<gridSize, blockSize>>>(d_m, d_vals);
     cuda_log(cudaDeviceSynchronize());
     fflush(stdout);
 
-    cuda_log(cudaMemcpy(arr, d_arr, n_arr*sizeof(unsigned char), cudaMemcpyDeviceToHost));
+    transferMatrixDataToHost(m, d_m);
+
     cuda_log(cudaFree(d_vals));
-    cuda_log(cudaFree(d_arr));
 }

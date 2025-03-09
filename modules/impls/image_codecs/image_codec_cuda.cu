@@ -49,6 +49,37 @@ image_codec::image_codec()
     cuda_log(nvjpegJpegStateCreate(nv_handle, &nvjpeg_decoder_state));
 }
 
+
+ImageInfo image_codec::read_info(std::vector<unsigned char>* img_buffer)
+{
+    // Info about input file
+    // number of channels in image
+    int nComponent = 0;
+    nvjpegChromaSubsampling_t subsampling;
+    //width and height of every channel
+    int widths[NVJPEG_MAX_COMPONENT];
+    int heights[NVJPEG_MAX_COMPONENT];
+
+    cuda_log(nvjpegGetImageInfo(nv_handle, img_buffer->data(), img_buffer->size(), &nComponent, &subsampling, widths, heights));
+
+    ImageInfo info;
+    info.width = widths[0];
+    info.height = heights[0];
+    if (nComponent == 1)
+    {
+        info.colorScheme = ImageColorScheme::IMAGE_GRAY;
+    }
+    else
+    {
+        info.colorScheme = ImageColorScheme::IMAGE_RGB;
+    }
+
+    //for now, need to figure out how to retrieve it
+    info.bit_depth = 8;
+
+    return info;
+}
+
 void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
     // code taken from example: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
@@ -73,7 +104,7 @@ void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_mat
     // Fill nv_image with image data, by copying data from matrix to GPU
     // docs about nv_image: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
     cuda_log(cudaMalloc((void **)&(nv_image.channel[0]), pitch_0_size * img_matrix->height));
-    cuda_log(cudaMemcpy(nv_image.channel[0], img_matrix->array.data(), pitch_0_size * img_matrix->height, cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(nv_image.channel[0], img_matrix->get_arr_interlaced(), pitch_0_size * img_matrix->height, cudaMemcpyHostToDevice));
     
     nv_image.pitch[0] = pitch_0_size;
 
@@ -106,36 +137,28 @@ void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_mat
 
 void image_codec::decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
-    // Info about input file
-    // number of channels in image
-    int nComponent = 0;
-    nvjpegChromaSubsampling_t subsampling;
-    //width and height of every channel
-    int widths[NVJPEG_MAX_COMPONENT];
-    int heights[NVJPEG_MAX_COMPONENT];
-
-    cuda_log(nvjpegGetImageInfo(nv_handle, img_source->data(), img_source->size(), &nComponent, &subsampling, widths, heights));
+    if (img_matrix->height == 0 || img_matrix->width == 0)
+    {
+        return;
+    }
 
     // image resize
-    size_t pitch = nComponent * widths[0];
+    size_t pitch = img_matrix->components_num * img_matrix->width;
 
     // Image buffer 
     unsigned char * deviceImgBuff = NULL;
-    cuda_log(cudaMalloc(&deviceImgBuff, pitch * heights[0]));
+    cuda_log(cudaMalloc(&deviceImgBuff, pitch * img_matrix->height));
 
     // device image buffer.
     nvjpegImage_t imgDesc;
     imgDesc.channel[0] = deviceImgBuff;
-    imgDesc.pitch[0] = (unsigned int)(widths[0] * nComponent);
+    imgDesc.pitch[0] = (unsigned int)(img_matrix->width * img_matrix->components_num);
 
     // decode by stages
     cuda_log(nvjpegDecode(nv_handle, nvjpeg_decoder_state, img_source->data(), img_source->size(), NVJPEG_OUTPUT_RGBI, &imgDesc, NULL));
 
-    img_matrix->array.resize(pitch * heights[0]);
-    cuda_log(cudaMemcpy(img_matrix->array.data(), deviceImgBuff, pitch * heights[0], cudaMemcpyKind::cudaMemcpyDeviceToHost));
-
-    img_matrix->height = heights[0];
-    img_matrix->width = widths[0];
+    img_matrix->resize(img_matrix->width, img_matrix->height);
+    cuda_log(cudaMemcpy(img_matrix->get_arr_interlaced(), deviceImgBuff, pitch * img_matrix->height, cudaMemcpyKind::cudaMemcpyDeviceToHost));
 
     //clean up
     cuda_log(cudaFree(deviceImgBuff));

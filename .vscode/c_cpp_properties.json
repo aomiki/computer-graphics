@@ -3,7 +3,10 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/modules/hw_accel",
+                "${workspaceFolder}/modules/",
+                "${workspaceFolder}/include/lodepng"
             ],
             "defines": [
                 "CUDA_IMPL",
@@ -11,7 +14,8 @@
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
-            "intelliSenseMode": "linux-clang-x64"
+            "intelliSenseMode": "linux-clang-x64",
+            "cppStandard": "c++23"
         }
     ],
     "version": 4

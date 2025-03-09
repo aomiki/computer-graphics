@@ -3,6 +3,20 @@
 #ifndef image_tools_h
 #define image_tools_h
 
+//the generic functions here should be executable on GPU
+// if file is built by nvcc, then the attributes are defined, 
+// if by anything else - then not
+# ifdef __CUDACC__
+#  define __matrix_attr__ __host__ __device__
+# else
+#  define __matrix_attr__
+# endif
+
+enum ImageColorScheme{
+    IMAGE_GRAY,
+    IMAGE_RGB
+};
+
 /// @brief Element of RGB matrix
 struct color_rgb {
     color_rgb(unsigned char r, unsigned char g, unsigned char b)
@@ -32,19 +46,61 @@ struct matrix_coord {
 /// @brief Abstract matrix
 class matrix {
     private:
-        unsigned int get_interlaced_index(unsigned int x, unsigned int y);
+        __matrix_attr__ unsigned int get_interlaced_index(unsigned int x, unsigned int y)
+        {
+            return (width*y+x)*components_num;
+        }
+        unsigned int arr_size;
     public:
-        const unsigned int COMPONENTS_NUM;
-        std::vector<unsigned char> array;
+        unsigned char* arr;
+        unsigned int components_num;
         unsigned width;
         unsigned height;
 
-        matrix(unsigned int components_num, unsigned width, unsigned height);
-        matrix(unsigned int components_num);
+        __matrix_attr__ matrix(unsigned int components_num, unsigned width, unsigned height);
+        __matrix_attr__ matrix(unsigned int components_num);
 
-        unsigned char* get(unsigned int x, unsigned int y);
-        unsigned char* get_c_arr_interlaced();
-        unsigned int size_interlaced();
+        void resize(unsigned width, unsigned height);
+
+        __matrix_attr__ unsigned char* get(unsigned int x, unsigned int y)
+        {
+            return arr + get_interlaced_index(x, y);
+        }
+        
+        __matrix_attr__ unsigned char* get_arr_interlaced()
+        {
+            return arr;
+        }
+        
+        __matrix_attr__ unsigned int size_interlaced()
+        {
+            return width * height * components_num;
+        }
+        
+        __matrix_attr__ unsigned int size()
+        {
+            return width * height;
+        }
+        
+        __matrix_attr__ ~matrix()
+        {
+            if (size_interlaced() != 0)
+            {
+                delete [] arr;
+            } 
+        }
+        
+        __matrix_attr__ void set_arr_interlaced(unsigned char *arr, unsigned width, unsigned height)
+        {
+            this->arr = arr;
+            this->width = width;
+            this->height = height;
+        }
+
+        __matrix_attr__ void set_arr_interlaced(unsigned char *arr)
+        {
+            this->arr = arr;
+        }
 };
 
 /// @brief Abstract image matrix

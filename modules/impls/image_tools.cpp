@@ -1,26 +1,24 @@
 #include "image_tools.h"
 #include "matrix_routines.h"
+#include <cstring>
 
-inline unsigned int matrix::get_interlaced_index(unsigned int x, unsigned int y)
+void matrix::resize(unsigned width, unsigned height)
 {
-    return (width*y+x)*COMPONENTS_NUM;
-}
+    unsigned int old_size = size_interlaced();
 
-unsigned char* matrix::get(unsigned int x, unsigned int y)
-{
-    return array.data() + get_interlaced_index(x, y);
-}
+    this->width = width;
+    this->height = height;
 
-unsigned char* matrix::get_c_arr_interlaced()
-{
-    return array.data();
-}
+    unsigned char* newArr = new unsigned char[size_interlaced()];
 
-unsigned int matrix::size_interlaced()
-{
-    return array.size();
-}
+    if (old_size != 0)
+    {
+        std::memcpy(newArr, arr,  old_size);
+        delete [] arr;
+    }
 
+    arr = newArr;
+}
 
 void matrix_gray::element_to_c_arr(unsigned char* buffer, unsigned char value)
 {
