@@ -1,4 +1,7 @@
 {
+    "files.exclude": {
+        "**/*.o": true
+    },
     "files.associations": {
         "iostream": "cpp",
         "any": "cpp",

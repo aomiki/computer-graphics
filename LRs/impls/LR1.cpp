@@ -1,5 +1,6 @@
 #include "LR1.h"
 #include "image_draw_lines.h"
+#include "image_draw_objects.h"
 #include "obj_parser.h"
 #include <fstream>
 #include <vector>
@@ -108,12 +109,7 @@ void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_fil
     matrix.fill(color_rgb(255, 255, 255));
     std::vector <vertex> vertices;
     readObj(in_filename, &vertices);
-    for (size_t i = 0; i < vertices.size(); i++)
-    {
-        int x = static_cast<int>(5000 * vertices[i].x + 500);
-        int y = static_cast<int>(height - (5000 * vertices[i].y + 500));
-        matrix.set(x, y, color_rgb(95, 0, 237));
-    }
+    draw_vertices(&matrix, &vertices, color_rgb(95, 0, 237), 5000, 500);
 
     std::vector<unsigned char> png_buffer;
     codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);

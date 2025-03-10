@@ -10,7 +10,7 @@
 #include <string>
 #include <filesystem>
 
-#define LR1
+#define LR2
 
 namespace fs = std::filesystem;
 
@@ -49,10 +49,16 @@ int main()
     lr1_task2_line(draw_line_dy_rev1, lr1_result_folder / "t2_img_line_dy_rev1", &codec);
     lr1_task2_line(draw_line, lr1_result_folder / "t2_img_line_bresenham", &codec);
 
-    lr1_task3_vertices(lr1_result_folder / "t3_vertices.txt", input_folder / "model.obj");
+    //lr1_task3_vertices(lr1_result_folder / "t3_vertices.txt", input_folder / "model.obj");
     lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", &codec);
     lr1_task5_polygons(lr1_result_folder / "t5_polygons.txt", input_folder / "model.obj");
     lr1_task6_draw_object(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t6_object", &codec);
+
+    #endif
+
+    #ifdef VERTICES_TEST
+
+    lr1_task4_draw_vertices(1000, 1000, input_folder / "tposegirl_pc.obj", lr1_result_folder / "tposegirl_pc", &codec);
 
     #endif
 
@@ -61,6 +67,7 @@ int main()
     lr2_task9_single_triag_outofbound(lr2_result_folder / "t9_single_triag_outofbound", &codec);
     lr2_task9_single_triag_fulloutofbound(lr2_result_folder / "t9_single_triag_fulloutofbound", &codec);
     lr2_task9_multiple_triags_big(lr2_result_folder / "t9_multiple_triags_big", &codec);
+    lr2_task10_model(input_folder / "model.obj", lr2_result_folder / "t10_model_filled", 1000, 1000, &codec);
     #endif
 
     codec.~image_codec();

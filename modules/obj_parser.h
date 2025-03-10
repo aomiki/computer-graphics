@@ -1,13 +1,17 @@
+#ifndef OBJ_PARSER_H
+#define OBJ_PARSER_H
+
 #include <string> 
 #include <vector>
+
+#include "image_tools.h"
 using namespace std;
 
-
 struct vertex{
-     vertex()
+     __matrix_attr__ vertex()
      {}
 
-     vertex(double x, double y, double z = 0)
+     __matrix_attr__ vertex(double x, double y, double z = 0)
      {
           this->x = x;
           this->y = y;
@@ -36,3 +40,5 @@ bool parseVertex(string source, vertex* v);
 bool parsePolygon(string source, polygon* p);
 
 void readObj(const string filename, vector <vertex>* vertices = nullptr, vector <polygon>* polygons = nullptr);
+
+#endif

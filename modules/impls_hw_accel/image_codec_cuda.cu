@@ -1,5 +1,6 @@
 #include "image_codec.h"
 #include "nvjpeg.h"
+#include "utils.cuh"
 #include <fstream>
 
 cudaStream_t stream;
@@ -18,12 +19,6 @@ std::string last_error_desc = "";
 void cuda_log(nvjpegStatus_t status)
 {
     last_status = status;
-}
-
-void cuda_log(cudaError_t status)
-{
-    last_error = status;
-    last_error_desc = cudaGetErrorString(status);
 }
 
 image_codec::image_codec()

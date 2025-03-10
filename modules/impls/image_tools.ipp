@@ -1,27 +1,9 @@
-#include "matrix_routines.h"
-
 template<typename E>
 void matrix_color<E>::fill(E value)
 {
-    #ifdef CUDA_IMPL
     unsigned char* c_value = new unsigned char[components_num];
     element_to_c_arr(c_value, value);
-
-    fillInterlaced(this, c_value);
-
-    delete [] c_value;
-
-    #else
-
-    for (size_t i = 0; i < width; i++)
-    {
-        for (size_t j = 0; j < height; j++)
-        {
-            set(i, j, value);
-        }
-    }
-
-    #endif
+    matrix::fill(c_value);
 }
 
 template<typename E>

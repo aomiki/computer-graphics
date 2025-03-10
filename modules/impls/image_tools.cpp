@@ -1,5 +1,4 @@
 #include "image_tools.h"
-#include "matrix_routines.h"
 #include <cstring>
 
 void matrix::resize(unsigned width, unsigned height)

@@ -33,7 +33,7 @@ struct color_rgb {
 
 struct matrix_coord {
 
-    matrix_coord(unsigned x, unsigned y)
+    __matrix_attr__ matrix_coord(unsigned x, unsigned y)
     {
         this->x = x;
         this->y = y;
@@ -61,6 +61,7 @@ class matrix {
         __matrix_attr__ matrix(unsigned int components_num);
 
         void resize(unsigned width, unsigned height);
+        void fill(unsigned char* value);
 
         __matrix_attr__ unsigned char* get(unsigned int x, unsigned int y)
         {
@@ -107,12 +108,12 @@ class matrix {
 /// @tparam E Type of matrix elements
 template<typename E>
 class matrix_color : public matrix {
-    private:
-        void virtual element_to_c_arr(unsigned char* buffer, E value) = 0;
-        E virtual c_arr_to_element(unsigned char* buffer) = 0;
     public:
         matrix_color(unsigned int components_num) : matrix(components_num) {}
         matrix_color(unsigned int components_num, unsigned width, unsigned height) : matrix(components_num, width, height) {}
+
+        void virtual element_to_c_arr(unsigned char* buffer, E value) = 0;
+        E virtual c_arr_to_element(unsigned char* buffer) = 0;
 
         /// @brief Assign value to matrix cell
         /// @param[in] x x coordinate
@@ -139,22 +140,22 @@ class matrix_color : public matrix {
 /// @brief Matrix for storing RGB images
 class matrix_rgb : public matrix_color<color_rgb>
 {
-    private:
-        void virtual element_to_c_arr(unsigned char* buffer, color_rgb value);
-        color_rgb virtual c_arr_to_element(unsigned char* buffer);
     public:
         matrix_rgb(): matrix_color<color_rgb>(3) {}
         matrix_rgb(unsigned width, unsigned height): matrix_color<color_rgb>(3, width, height) {}
+
+        void virtual element_to_c_arr(unsigned char* buffer, color_rgb value);
+        color_rgb virtual c_arr_to_element(unsigned char* buffer);
 };
 
 /// @brief Matrix for storing grayscale images
 class matrix_gray : public matrix_color<unsigned char>
 {
-    private:
-        void virtual element_to_c_arr(unsigned char* buffer, unsigned char value);
-        unsigned char virtual c_arr_to_element(unsigned char* buffer);
     public:
         matrix_gray(unsigned width, unsigned height): matrix_color<unsigned char>(1, width, height) {}
+
+        void virtual element_to_c_arr(unsigned char* buffer, unsigned char value);
+        unsigned char virtual c_arr_to_element(unsigned char* buffer);
 };
 
 #include "impls/image_tools.ipp"

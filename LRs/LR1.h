@@ -1,4 +1,3 @@
-#include "image_tools.h"
 #include "image_codec.h"
 #include <string>
 
