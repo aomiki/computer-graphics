@@ -1,7 +1,7 @@
 #include "image_draw_objects.h"
 #include "image_tools.h"
 
-inline __matrix_attr__ vertex get_barycentric_coords(matrix_coord m_coords, vertex v1, vertex v2, vertex v3)
+__matrix_attr__ vertex get_barycentric_coords(matrix_coord m_coords, vertex v1, vertex v2, vertex v3)
 {
     vertex baryc;
 

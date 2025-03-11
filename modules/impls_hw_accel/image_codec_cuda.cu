@@ -191,7 +191,7 @@ image_codec::~image_codec()
         cuda_log(nvjpegEncoderParamsDestroy(nv_enc_params));
         nv_enc_params = nullptr;
     }
-    
+
     if (nv_enc_state != nullptr)
     {
         cuda_log(nvjpegEncoderStateDestroy(nv_enc_state));

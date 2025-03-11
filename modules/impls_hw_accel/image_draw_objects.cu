@@ -254,5 +254,4 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     transferMatrixDataToHost(img, d_m);
 }
 
-
 #include "_image_draw_objects_instances.h"

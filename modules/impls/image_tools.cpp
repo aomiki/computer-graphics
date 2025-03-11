@@ -1,6 +1,22 @@
 #include "image_tools.h"
 #include <cstring>
 
+matrix::matrix(unsigned int components_num, unsigned width, unsigned height)
+{
+    this->height = 0;
+    this->width = 0;
+    this->components_num = components_num;
+
+    resize(width, height);
+}
+
+matrix::matrix(unsigned int components_num)
+{
+    this->height = 0;
+    this->width = 0;
+    this->components_num = components_num;
+}
+
 void matrix::resize(unsigned width, unsigned height)
 {
     unsigned int old_size = size_interlaced();

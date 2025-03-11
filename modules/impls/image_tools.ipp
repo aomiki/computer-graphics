@@ -27,19 +27,3 @@ void matrix_color<E>::set(unsigned x, unsigned y, E value)
     unsigned char* cell = matrix::get(x, y);
     element_to_c_arr(cell, value);
 }
-
-__matrix_attr__ inline matrix::matrix(unsigned int components_num, unsigned width, unsigned height)
-{
-    this->height = 0;
-    this->width = 0;
-    this->components_num = components_num;
-
-    resize(width, height);
-}
-
-__matrix_attr__ inline matrix::matrix(unsigned int components_num)
-{
-    this->height = 0;
-    this->width = 0;
-    this->components_num = components_num;
-}

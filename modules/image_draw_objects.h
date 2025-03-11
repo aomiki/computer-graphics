@@ -3,7 +3,7 @@
 #include "image_tools.h"
 #include "obj_parser.h"
 
-inline __matrix_attr__ vertex get_barycentric_coords(matrix_coord m_coords, vertex v1, vertex v2, vertex v3);
+__matrix_attr__ vertex get_barycentric_coords(matrix_coord m_coords, vertex v1, vertex v2, vertex v3);
 
 template<typename E>
 void draw_vertices(matrix_color<E>* m, std::vector<vertex>* vertices, E vertex_color, int scale, int offset);
@@ -16,7 +16,5 @@ void draw_polygons(matrix_color<E>* img, std::vector<vertex>* vertices, E polyg_
 
 template<typename E>
 void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, int scale, int offset);
-
-#include "impls/image_draw_objects.ipp"
 
 #endif
