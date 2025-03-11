@@ -8,10 +8,10 @@
 using namespace std;
 
 struct vertex{
-     __matrix_attr__ vertex()
+     __shared_func__ vertex()
      {}
 
-     __matrix_attr__ vertex(double x, double y, double z = 0)
+     __shared_func__ vertex(double x, double y, double z = 0)
      {
           this->x = x;
           this->y = y;

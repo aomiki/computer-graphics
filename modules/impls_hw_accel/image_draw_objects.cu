@@ -1,6 +1,7 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
+#include "vertex_tools.h"
 #include "image_draw_objects.h"
 #include "utils.cuh"
 
@@ -177,18 +178,47 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
         c_polyg_color[i] = rand_num;
     }
 
+    vertex poly_v1(
+        vertices[polygons[i].vertex_index1-1].x,
+        vertices[polygons[i].vertex_index1-1].y
+    );
+    vertex poly_v2(
+        vertices[polygons[i].vertex_index2-1].x,
+        vertices[polygons[i].vertex_index2-1].y
+    );
+    vertex poly_v3{
+        vertices[polygons[i].vertex_index3-1].x,
+        vertices[polygons[i].vertex_index3-1].y
+    };
+
+    vertex poly_vec1;
+    vertex poly_vec2;
+
+    poly_vertices_to_vectors(poly_v1, poly_v2, poly_v3, poly_vec1, poly_vec2);
+
+    vertex n = normal(poly_vec1, poly_vec2);
+
+    vertex camera_vec(0, 0, 1);
+    double d = dot(n, camera_vec);
+    double viewing_angle_cosine = d/(length(n)*length(camera_vec));
+
+    if (viewing_angle_cosine >= 0)
+    {
+        return;
+    }
+    
     //retrieve polygon's vertices and scale them
     vertex v1{
-        scale * vertices[polygons[i].vertex_index1-1].x + offset,
-        m->height - (scale * vertices[polygons[i].vertex_index1-1].y + offset)
+        scale * poly_v1.x + offset,
+        m->height - (scale * poly_v1.y + offset)
     };
     vertex v2{
-        scale * vertices[polygons[i].vertex_index2-1].x + offset,
-        m->height - (scale * vertices[polygons[i].vertex_index2-1].y + offset)
+        scale * poly_v2.x + offset,
+        m->height - (scale * poly_v2.y + offset)
     };
     vertex v3{
-        scale * vertices[polygons[i].vertex_index3-1].x + offset,
-        m->height - (scale * vertices[polygons[i].vertex_index3-1].y + offset)
+        scale * poly_v3.x + offset,
+        m->height - (scale * poly_v3.y + offset)
     };
 
     //calculate rectangular boundary of the triangle

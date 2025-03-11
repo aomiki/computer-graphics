@@ -7,9 +7,9 @@
 // if file is built by nvcc, then the attributes are defined, 
 // if by anything else - then not
 # ifdef __CUDACC__
-#  define __matrix_attr__ __host__ __device__
+#  define __shared_func__ __host__ __device__
 # else
-#  define __matrix_attr__
+#  define __shared_func__
 # endif
 
 enum ImageColorScheme{
@@ -33,7 +33,7 @@ struct color_rgb {
 
 struct matrix_coord {
 
-    __matrix_attr__ matrix_coord(unsigned x, unsigned y);
+    __shared_func__ matrix_coord(unsigned x, unsigned y);
 
     unsigned x;
     unsigned y;
@@ -43,7 +43,7 @@ struct matrix_coord {
 class matrix {
     private:
         unsigned int arr_size;
-        __matrix_attr__ unsigned int get_interlaced_index(unsigned int x, unsigned int y);
+        __shared_func__ unsigned int get_interlaced_index(unsigned int x, unsigned int y);
     public:
         unsigned char* arr;
         unsigned int components_num;
@@ -56,13 +56,13 @@ class matrix {
         void resize(unsigned width, unsigned height);
         void fill(unsigned char* value);
 
-        __matrix_attr__ unsigned char* get(unsigned int x, unsigned int y);
-        __matrix_attr__ unsigned char* get_arr_interlaced();
-        __matrix_attr__ unsigned int size_interlaced();
-        __matrix_attr__ unsigned int size();
-        __matrix_attr__ ~matrix();
-        __matrix_attr__ void set_arr_interlaced(unsigned char *arr, unsigned width, unsigned height);
-        __matrix_attr__ void set_arr_interlaced(unsigned char *arr);
+        __shared_func__ unsigned char* get(unsigned int x, unsigned int y);
+        __shared_func__ unsigned char* get_arr_interlaced();
+        __shared_func__ unsigned int size_interlaced();
+        __shared_func__ unsigned int size();
+        __shared_func__ ~matrix();
+        __shared_func__ void set_arr_interlaced(unsigned char *arr, unsigned width, unsigned height);
+        __shared_func__ void set_arr_interlaced(unsigned char *arr);
 };
 
 /// @brief Abstract image matrix

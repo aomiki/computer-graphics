@@ -1,6 +1,8 @@
 #include <cmath>
 #include <algorithm>
 #include <random>
+
+#include "vertex_tools.h"
 #include "image_draw_objects.h"
 
 template<typename E>
