@@ -38,10 +38,7 @@ __shared_func__ double dot(vertex vec1, vertex vec2)
 __shared_func__ vertex normal(vertex vec1, vertex vec2)
 {
     //https://en.wikipedia.org/wiki/Cross_product
-/*
-    vertex vec1(poly_v2.x - poly_v3.x, poly_v2.y - poly_v3.y, poly_v2.z - poly_v3.z);
-    vertex vec2(poly_v2.x - poly_v1.x, poly_v2.y - poly_v1.y, poly_v2.z - poly_v1.z);
-*/
+
     vertex normal_vec(
         vec1.y * vec2.z - vec1.z * vec2.y,
         vec1.z * vec2.x - vec1.x * vec2.z,

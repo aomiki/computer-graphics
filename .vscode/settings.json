@@ -85,6 +85,7 @@
         "*.ipp": "cpp",
         "csignal": "cpp",
         "*.inc": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "ranges": "cpp"
     }
 }

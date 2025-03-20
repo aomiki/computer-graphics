@@ -30,7 +30,7 @@ LDFLAGS_CUDA := -I/opt/cuda/include/ -L/opt/cuda/lib
 LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos -lcudart -lcudadevrt
 
 #General arguments
-LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/ -I modules/hw_accel/
+LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
 CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.o -g
 
 #Compile with LodePNG implementation (link object files)

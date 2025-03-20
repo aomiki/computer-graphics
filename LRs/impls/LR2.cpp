@@ -89,8 +89,8 @@ void lr2_task9_multiple_triags_big(std::string out_path, image_codec *codec)
 
 void lr2_task10_model(std::string in_path, std::string out_path, unsigned width, unsigned height, image_codec *codec)
 {
-    matrix_rgb matrix(width, height);
-    matrix.fill(color_rgb(255, 255, 255));
+    matrix_gray matrix(width, height);
+    matrix.fill(255);
     std::vector <vertex> vertices;
     std::vector <polygon> polygons;
     readObj(in_path, &vertices, &polygons);
@@ -98,6 +98,6 @@ void lr2_task10_model(std::string in_path, std::string out_path, unsigned width,
     draw_polygons_filled(&matrix, &vertices, &polygons, 5000, 500);
 
     std::vector<unsigned char> png_buffer;
-    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
+    codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
     codec->save_image_file(&png_buffer, out_path);
 }
