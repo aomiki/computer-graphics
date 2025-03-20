@@ -41,15 +41,15 @@ graphics-lode.out: $(MODULES) $(MODULES_SHARED_CPP) $(LRS) $(LODE) Program.o
 #Compile with CUDA implementation
 graphics-cuda.out: HW_ACCEL = CUDA_IMPL
 graphics-cuda.out: $(MODULES) $(MODULES_SHARED_CUDA) $(LRS) $(CUDA_MODULES) Program.o
-	nvcc $(LDFLAGS) -dlink -o cuda_modules_linked.o $(MODULES_SHARED_CUDA) $(CUDA_MODULES) $(LDLIBS_CUDA)
+	nvcc $(LDFLAGS) -arch=native -dlink -o cuda_modules_linked.o $(MODULES_SHARED_CUDA) $(CUDA_MODULES) $(LDLIBS_CUDA)
 	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CUDA) cuda_modules_linked.o $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-cuda.out
 
 modules/impls_shared/%.cu.o: modules/impls_shared/%.cpp
-	nvcc $(LDFLAGS) -x cu -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
+	nvcc $(LDFLAGS) -arch=native -x cu -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
 
 #Compile CUDA implementation (target that invokes if *.o with *.cu source is required by other targets)
 %.o: %.cu
-	nvcc $(LDFLAGS) -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
+	nvcc $(LDFLAGS) -arch=native -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp

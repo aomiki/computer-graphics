@@ -80,16 +80,10 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max
             if (zbuffer[interlaced_index] == curr_z)
             {
                 m->get(curr.x, curr.y)[z] = polygon_color[z];
-                //printf("M(%d, %d)\tV1(%f, %f, %f)\tV2(%f, %f, %f)\tV3(%f, %f, %f)\tcolor: %d\tdraw\n", curr.x, curr.y, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, polygon_color[0]);
-            }
-            else
-            {
-                //printf("M(%d, %d)\tV1(%f, %f, %f)\tV2(%f, %f, %f)\tV3(%f, %f, %f)\tcolor: %d\tskip\n", curr.x, curr.y, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, polygon_color[0]);
             }
         }
         else
         {
-            //printf("!!! M(%d, %d)\tV1(%f, %f, %f)\tV2(%f, %f, %f)\tV3(%f, %f, %f)\tcolor: %d\tdraw\n", curr.x, curr.y, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, polygon_color[0]);
             m->get(curr.x, curr.y)[z] = polygon_color[z];
         }
     }
@@ -102,7 +96,7 @@ __global__ void kernel_fill(long long* arr, long long val)
     arr[i] = val;
 }
 
-__host__ __device__ void calc_triangle_boundaries(matrix_coord& min_coord, matrix_coord& max_coord, vertex v1, vertex v2, vertex v3, matrix& m)
+__host__ __device__ void calc_triangle_boundaries(matrix_coord& min_coord, matrix_coord& max_coord, vertex& v1, vertex& v2, vertex& v3, matrix& m)
 {
     double xmin = min(min(v1.x, v2.x), v3.x);
     double ymin = min(min(v1.y, v2.y), v3.y);
@@ -180,6 +174,11 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
     delete h_vals;
 };
 
+__global__ void kernel_free(void* p)
+{
+    free(p);
+}
+
 /// @brief Draw polygons and paint them using random values.
 /// @param m image matrix
 /// @param vertices raw vertices
@@ -190,24 +189,11 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 /// @param offset how much to offset polygons
 /// @param curState used for random numbers generator
 /// @param seed used for random numbers generator
-__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, curandState* curState, unsigned long seed, long long* zbuffer, unsigned char* polyColors)
+__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, long long* zbuffer)
 {
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
-/*
-    curand_init(seed, i, 0, curState);
-  */  
-    //get random color
-    unsigned char* c_polyg_color = (unsigned char*)malloc(m->components_num);
-    /*
-    for (unsigned i = 0; i < m->components_num; i++)
-    {
-        float RANDOM = curand_uniform(curState);
 
-        unsigned int rand_num = truncf(255 * RANDOM);
-        c_polyg_color[i] = rand_num;
-    }
-*/
     vertex poly_v1(
         vertices[polygons[i].vertex_index1-1].x,
         vertices[polygons[i].vertex_index1-1].y,
@@ -235,14 +221,15 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     double d = dot(n, camera_vec);
     double viewing_angle_cosine = d/(length(n)*length(camera_vec));
 
-    if (viewing_angle_cosine > -0.9)
+    unsigned char* c_polyg_color = (unsigned char*)malloc(m->components_num);
+
+    if (viewing_angle_cosine >= 0)
     {
         free(c_polyg_color);
         return;
     }
 
     c_polyg_color[0] = (unsigned char)(-255.0 * viewing_angle_cosine + 0.5);
-    polyColors[i] = c_polyg_color[0];
 
     //retrieve polygon's vertices and scale them
     vertex v1{
@@ -261,7 +248,7 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
         poly_v3.z
     };
 
-    printf("%d V1(%f,%f,%f)\tV2(%f,%f,%f)\tV3(%f,%f,%f)\t%u\n", i, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, c_polyg_color[0]);
+    //printf("%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u\n", i, poly_v1.x, poly_v1.y, poly_v1.z, poly_v2.x, poly_v2.y, poly_v2.z, poly_v3.x, poly_v3.y, poly_v3.z, viewing_angle_cosine, c_polyg_color[0]);
 
     //calculate rectangular boundary of the triangle
     matrix_coord min(0,0);
@@ -291,16 +278,12 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     dim3 blocknum(blocknum_x, blocknum_y);
 
     kernel_drawPolygon<<<blocknum, blocksize>>>(m, min, max, c_polyg_color, v1, v2, v3, zbuffer);
-
-    free(c_polyg_color);
+    kernel_free<<<1, 1, 0, cudaStreamTailLaunch>>>(c_polyg_color);
 };
 
 template <typename E>
 inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, int scale, int offset)
 {
-    curandState* randState;
-    cudaMalloc (&randState, sizeof(curandState));
-
     //CUDA-SPECIFIC
     //Итерируемся по полигонам. На каждой такой итерации - получаем нужные вершины и конвертируем в координаты экрана.
     //Затем создаем квадрат в пределах этих вершин и итерируемся по каждому пикселю в квадрате, закрашивая либо не закрашивая по пути
@@ -324,74 +307,18 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     cuda_log(cudaMemcpy(d_vertices, vertices->data(), vertices->size() * sizeof(vertex), cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_polygons, polygons->data(), polygons->size() * sizeof(polygon), cudaMemcpyHostToDevice));
 
-
     kernel_fill<<<img->width * img->height, 1>>>(d_zbuffer, std::numeric_limits<long long>().max());
 
     //by default the limit on the number of simultaneous kernel launches is imposed 
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, blocknum));
 
-    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, randState, time(NULL), d_zbuffer, d_polyColors);
+    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer);
     cuda_log(cudaDeviceSynchronize());
 
     long long* h_zbuffer = new long long[img->width * img->height];
     unsigned char* h_polyColors = new unsigned char[polygons->size()];
     cuda_log(cudaMemcpy(h_polyColors, d_polyColors, polygons->size() * sizeof(unsigned char), cudaMemcpyDeviceToHost));
     cuda_log(cudaMemcpy(h_zbuffer, d_zbuffer, img->width * img->height * sizeof(long long), cudaMemcpyDeviceToHost));
-
-    // for (size_t i = 0; i < polygons->size(); i++)
-    // {
-    //     vertex poly_v1(
-    //         (*vertices)[(*polygons)[i].vertex_index1-1].x,
-    //         (*vertices)[(*polygons)[i].vertex_index1-1].y,
-    //         (*vertices)[(*polygons)[i].vertex_index1-1].z
-    //     );
-    //     vertex poly_v2(
-    //         (*vertices)[(*polygons)[i].vertex_index2-1].x,
-    //         (*vertices)[(*polygons)[i].vertex_index2-1].y,
-    //         (*vertices)[(*polygons)[i].vertex_index2-1].z
-    //     );
-    //     vertex poly_v3{
-    //         (*vertices)[(*polygons)[i].vertex_index3-1].x,
-    //         (*vertices)[(*polygons)[i].vertex_index3-1].y,
-    //         (*vertices)[(*polygons)[i].vertex_index3-1].z
-    //     };
-
-    //     //retrieve polygon's vertices and scale them
-    //     vertex v1{
-    //         scale * poly_v1.x + offset,
-    //         img->height - (scale * poly_v1.y + offset),
-    //         poly_v1.z
-    //     };
-    //     vertex v2{
-    //         scale * poly_v2.x + offset,
-    //         img->height - (scale * poly_v2.y + offset),
-    //         poly_v2.z
-    //     };
-    //     vertex v3{
-    //         scale * poly_v3.x + offset,
-    //         img->height - (scale * poly_v3.y + offset),
-    //         poly_v3.z
-    //     };
-
-    // }
-    
-    printf("____\t");
-    for (unsigned i = 0; i < img->width; i++)
-    {
-        printf("%d\t", i+1);
-    }
-
-    printf("\n");
-    for (unsigned i = 0; i < img->height; i++)
-    {
-        printf("%d\t", i+1);
-        for (size_t j = 0; j < img->width; j++)
-        {
-            printf("%lld\t", h_zbuffer[img->width * i + j]);
-        }
-        printf("\n");
-    }
-    
 
     transferMatrixDataToHost(img, d_m);
 }
