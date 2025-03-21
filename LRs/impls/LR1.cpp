@@ -103,13 +103,13 @@ void lr1_task5_polygons(std::string filepath, std::string in_filename)
     out.close();
 }
 
-void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath, image_codec* codec)
+void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath, int scale, int offset, image_codec* codec)
 {
     matrix_rgb matrix(width, height);
     matrix.fill(color_rgb(255, 255, 255));
     std::vector <vertex> vertices;
     readObj(in_filename, &vertices);
-    draw_vertices(&matrix, &vertices, color_rgb(95, 0, 237), 5000, 500);
+    draw_vertices(&matrix, &vertices, color_rgb(95, 0, 237), scale, offset);
 
     std::vector<unsigned char> png_buffer;
     codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);

@@ -50,7 +50,7 @@ int main()
     lr1_task2_line(draw_line, lr1_result_folder / "t2_img_line_bresenham", &codec);
 
     //lr1_task3_vertices(lr1_result_folder / "t3_vertices.txt", input_folder / "model.obj");
-    lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", &codec);
+    lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", 5000, 500, &codec);
     lr1_task5_polygons(lr1_result_folder / "t5_polygons.txt", input_folder / "model.obj");
     lr1_task6_draw_object(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t6_object", &codec);
 
@@ -67,7 +67,11 @@ int main()
     lr2_task9_single_triag_outofbound(lr2_result_folder / "t9_single_triag_outofbound", &codec);
     lr2_task9_single_triag_fulloutofbound(lr2_result_folder / "t9_single_triag_fulloutofbound", &codec);
     lr2_task9_multiple_triags_big(lr2_result_folder / "t9_multiple_triags_big", &codec);
-    lr2_task10_model(input_folder / "model.obj", lr2_result_folder / "t10_model_filled", 1000, 1000, &codec);
+    lr1_task4_draw_vertices(500, 500, input_folder / "dagger.obj", lr2_result_folder / "dagger", 100, 100, &codec);
+    lr2_task10_model(input_folder / "model.obj", lr2_result_folder / "t10_model_filled", 1000, 1000, 5000, 500, &codec);
+    lr2_task10_model(input_folder / "dagger.obj", lr2_result_folder / "t10_dagger_filled", 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "clock.obj", lr2_result_folder / "t10_clock_filled", 1000, 1000, 40, 500, &codec);
+    lr2_task10_model(input_folder / "12268_banjofrog_v1_L3.obj", lr2_result_folder / "t10_banjofro_filled", 1000, 1000, 40, 500, &codec);
     #endif
 
     codec.~image_codec();

@@ -7,7 +7,7 @@ using namespace std;
 
 bool parseVertex(string source, vertex* v)
 {
-    const regex r_ver ("^v( -?[0-9]+(?:\\.[0-9]+)?)( -?[0-9]+(?:\\.[0-9]+)?)( -?[0-9]+(?:\\.[0-9]+)?)\\s*$");
+    const regex r_ver ("^v\\s+(-?[0-9]+(?:\\.[0-9]+)?) (-?[0-9]+(?:\\.[0-9]+)?) (-?[0-9]+(?:\\.[0-9]+)?)\\s*$");
     smatch m;
     if (regex_search(source, m, r_ver))
     {
@@ -22,7 +22,7 @@ bool parseVertex(string source, vertex* v)
 
 bool parsePolygon(string source, polygon* p) 
 {
-    const regex pol (R"(^f ([0-9]+)\/([0-9]+)\/([0-9]+) ([0-9]+)\/([0-9]+)\/([0-9]+) ([0-9]+)\/([0-9]+)\/([0-9]+)\s*$)");
+    const regex pol (R"(^f\s+([0-9]+)(?:\/([0-9]+)\/([0-9]+))? ([0-9]+)(?:\/([0-9]+)\/([0-9]+))? ([0-9]+)(?:\/([0-9]+)\/([0-9]+))? (?:([0-9]+)(?:\/([0-9]+)\/([0-9]+))?)?\s*$)");
     smatch m;
     if (regex_search(source, m, pol))
     {
