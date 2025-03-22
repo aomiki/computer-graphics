@@ -205,6 +205,11 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
 
+    if (i >= n_poly)
+    {
+        return;
+    }
+
     vertex poly_v1(
         vertices[polygons[i].vertex_index1-1].x,
         vertices[polygons[i].vertex_index1-1].y,
@@ -288,8 +293,11 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     dim3 blocksize(blocksize_1d, blocksize_1d, m->components_num);
     dim3 blocknum(blocknum_x, blocknum_y);
 
-    kernel_drawPolygon<<<blocknum, blocksize>>>(m, min, max, c_polyg_color, v1, v2, v3, zbuffer);
-    kernel_free<<<1, 1, 0, cudaStreamTailLaunch>>>(c_polyg_color);
+    cudaStream_t s;
+    cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
+
+    kernel_drawPolygon<<<blocknum, blocksize, 0, s>>>(m, min, max, c_polyg_color, v1, v2, v3, zbuffer);
+    kernel_free<<<1, 1, 0, s>>>(c_polyg_color);
 };
 
 template <typename E>
@@ -300,8 +308,28 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     //Затем создаем квадрат в пределах этих вершин и итерируемся по каждому пикселю в квадрате, закрашивая либо не закрашивая по пути
     //основные индексы: i полигонов, x и y итерации по квадрату
     
-    unsigned blocksize = 1;
-    unsigned blocknum = polygons->size();
+    unsigned blocksize = 32;
+    if (polygons->size() >= 4480)
+    {
+        blocksize = 128;
+    }
+
+    if (polygons->size() >= 8960)
+    {
+        blocksize = 256;
+    }
+
+    if (polygons->size() >= 17920)
+    {
+        blocksize = 512;
+    }
+/*
+    if (polygons->size() >= 35840)
+    {
+        blocksize = 1024;
+    }
+*/
+    unsigned blocknum = (unsigned)((polygons->size() / blocksize) + 1);
 
     matrix* d_m = transferMatrixToDevice(img);
 
@@ -321,7 +349,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     kernel_fill<<<img->width * img->height, 1>>>(d_zbuffer, std::numeric_limits<double>().max());
 
     //by default the limit on the number of simultaneous kernel launches is imposed 
-    cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, blocknum));
+    cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
 
     kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer);
     cuda_log(cudaDeviceSynchronize());

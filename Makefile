@@ -2,6 +2,15 @@
 
 #Main compiler
 CXX = g++
+
+OPTIMIZATION_FLAGS_RELEASE= -march=native -Ofast
+OPTIMIZATION_FLAGS_DEBUG= -O0 -g
+OPTIMIZATION_FLAGS=$(OPTIMIZATION_FLAGS_RELEASE)
+
+NV_OPTIMIZATION_FLAGS_RELEASE= -use_fast_math -v
+NV_OPTIMIZATION_FLAGS_DEBUG= --debug --device-debug --cudart shared
+NV_OPTIMIZATION_FLAGS= $(NV_OPTIMIZATION_FLAGS_RELEASE)
+
 QT_DIR=/usr/lib/qt6
 
 #GUI
@@ -44,20 +53,20 @@ CXXFLAGS := $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) Program.o -g
 #Compile with LodePNG implementation (link object files)
 graphics-lode.out: HW_ACCEL = LODE_IMPL
 graphics-lode.out: $(MODULES) $(MODULES_SHARED_CPP) $(LRS) $(LODE) $(GUI) Program.o
-	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CPP) $(LODE) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-lode.out
+	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CPP) $(LODE) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic $(OPTIMIZATION_FLAGS) -o graphics-lode.out
 
 #Compile with CUDA implementation
 graphics-cuda.out: HW_ACCEL = CUDA_IMPL
 graphics-cuda.out: $(MODULES) $(MODULES_SHARED_CUDA) $(LRS) $(CUDA_MODULES) $(GUI) Program.o
 	nvcc $(LDFLAGS) -arch=native -dlink -o cuda_modules_linked.o $(MODULES_SHARED_CUDA) $(CUDA_MODULES) $(LDLIBS_CUDA)
-	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CUDA) cuda_modules_linked.o $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-cuda.out
+	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CUDA) cuda_modules_linked.o $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic $(OPTIMIZATION_FLAGS) -o graphics-cuda.out
 
 modules/impls_shared/%.cu.o: modules/impls_shared/%.cpp
-	nvcc $(LDFLAGS) -arch=native -x cu -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
+	nvcc $(LDFLAGS) -arch=native -x cu -rdc=true $(NV_OPTIMIZATION_FLAGS) -o $@ -c $^
 
 #Compile CUDA implementation (target that invokes if *.o with *.cu source is required by other targets)
 %.o: %.cu
-	nvcc $(LDFLAGS) -arch=native -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
+	nvcc $(LDFLAGS) -arch=native -rdc=true $(NV_OPTIMIZATION_FLAGS) -o $@ -c $^
 
 gui/moc_mainwindow.cpp: gui/mainwindow.h gui/ui_mainwindow.h
 	$(QT_DIR)/moc $(LDFLAGS) $< -o $@
@@ -70,7 +79,7 @@ gui/mainwindow.o: gui/ui_mainwindow.h
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) $(LDFLAGS_CUDA) $(LDFLAGS_GUI) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -g -o $@ -c $<
+	$(CXX) $(LDFLAGS) $(LDFLAGS_CUDA) $(LDFLAGS_GUI) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic $(OPTIMIZATION_FLAGS) -o $@ -c $<
 
 #Clean build files
 clean:
