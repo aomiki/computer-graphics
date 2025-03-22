@@ -6,7 +6,10 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/modules/hw_accel",
                 "${workspaceFolder}/modules/",
-                "${workspaceFolder}/include/lodepng"
+                "${workspaceFolder}/include/lodepng",
+                "/usr/include/qt6",
+                "/usr/include/qt/QtWidgets",
+                "/usr/include/qt6"
             ],
             "defines": [
                 "CUDA_IMPL",

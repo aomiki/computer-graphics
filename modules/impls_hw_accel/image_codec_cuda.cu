@@ -44,6 +44,10 @@ image_codec::image_codec()
     cuda_log(nvjpegJpegStateCreate(nv_handle, &nvjpeg_decoder_state));
 }
 
+ImgFormat image_codec::native_format()
+{
+    return JPEG;
+}
 
 ImageInfo image_codec::read_info(std::vector<unsigned char>* img_buffer)
 {

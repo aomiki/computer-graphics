@@ -55,7 +55,18 @@ void draw_vertices(matrix_color<E>* m, std::vector<vertex>* vertices, E vertex_c
     delete h_vals;
 };
 
-__global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max, unsigned char* polygon_color, vertex v1, vertex v2, vertex v3, long long* zbuffer = nullptr)
+__device__ double atomicMin_double(double* address, double val)
+{
+    unsigned long long int* address_as_ull = (unsigned long long int*) address;
+    unsigned long long int old = *address_as_ull, assumed;
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed, __double_as_longlong(fmin(val, __longlong_as_double(assumed))));
+    } while (assumed != old);
+    return __longlong_as_double(old);
+}
+
+__global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max, unsigned char* polygon_color, vertex v1, vertex v2, vertex v3, double* zbuffer = nullptr)
 {
     matrix_coord curr(
         threadIdx.x + blockDim.x * blockIdx.x + min.x,
@@ -73,9 +84,9 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max
         //z-buffer check, if available
         if (zbuffer != nullptr)
         {
-            int interlaced_index = curr.y * m->width +curr.x;
-            long long curr_z = (long long) ::cuda::std::numeric_limits<double>::max()/2 * (baryc.x * v1.z + baryc.y * v2.z + baryc.z * v3.z);
-            atomicMin(zbuffer + interlaced_index, curr_z);
+            int interlaced_index = curr.y * m->width + curr.x;
+            double curr_z = (baryc.x * v1.z + baryc.y * v2.z + baryc.z * v3.z);
+            atomicMin_double(zbuffer + interlaced_index, curr_z);
 
             if (zbuffer[interlaced_index] == curr_z)
             {
@@ -89,7 +100,7 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max
     }
 };
 
-__global__ void kernel_fill(long long* arr, long long val)
+__global__ void kernel_fill(double* arr, double val)
 {
     int i = blockIdx.x;
 
@@ -189,7 +200,7 @@ __global__ void kernel_free(void* p)
 /// @param offset how much to offset polygons
 /// @param curState used for random numbers generator
 /// @param seed used for random numbers generator
-__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, long long* zbuffer)
+__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, double* zbuffer)
 {
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -296,18 +307,18 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
 
     vertex* d_vertices;
     polygon* d_polygons;
-    long long* d_zbuffer;
+    double* d_zbuffer;
     unsigned char* d_polyColors;
 
     cuda_log(cudaMalloc(&d_vertices, vertices->size() * sizeof(vertex)));
     cuda_log(cudaMalloc(&d_polygons, polygons->size() * sizeof(polygon)));
     cuda_log(cudaMalloc(&d_polyColors, polygons->size() * sizeof(unsigned char)));
-    cudaMalloc(&d_zbuffer, img->width * img->height * sizeof(long long));
+    cudaMalloc(&d_zbuffer, img->width * img->height * sizeof(double));
 
     cuda_log(cudaMemcpy(d_vertices, vertices->data(), vertices->size() * sizeof(vertex), cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_polygons, polygons->data(), polygons->size() * sizeof(polygon), cudaMemcpyHostToDevice));
 
-    kernel_fill<<<img->width * img->height, 1>>>(d_zbuffer, std::numeric_limits<long long>().max());
+    kernel_fill<<<img->width * img->height, 1>>>(d_zbuffer, std::numeric_limits<double>().max());
 
     //by default the limit on the number of simultaneous kernel launches is imposed 
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, blocknum));

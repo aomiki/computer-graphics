@@ -10,7 +10,12 @@
 #include <string>
 #include <filesystem>
 
+#include "gui/mainwindow.h"
+
+#include <QApplication>
+
 #define LR2
+#define LR_LATEST
 
 namespace fs = std::filesystem;
 
@@ -23,9 +28,17 @@ const fs::path lr2_result_folder = result_folder / "LR2";
 void dotted_line_count(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color);
 void decode_encode_img(std::string filepath, image_codec* codec);
 
-int main()
+int main(int argc, char *argv[])
 {
     std::cout << "Shellow from SSAU!" << std::endl;
+    
+    if (argc > 1 && strcmp(argv[1], "--gui") == 0)
+    {
+        QApplication a(argc, argv);
+        MainWindow w;
+        w.show();
+        return a.exec();
+    }
 
     image_codec codec;
 
@@ -63,16 +76,35 @@ int main()
     #endif
 
     #ifdef LR2
-    lr2_task9_single_triag(lr2_result_folder / "t9_single_triag", &codec);
-    lr2_task9_single_triag_outofbound(lr2_result_folder / "t9_single_triag_outofbound", &codec);
-    lr2_task9_single_triag_fulloutofbound(lr2_result_folder / "t9_single_triag_fulloutofbound", &codec);
-    lr2_task9_multiple_triags_big(lr2_result_folder / "t9_multiple_triags_big", &codec);
-    lr1_task4_draw_vertices(500, 500, input_folder / "dagger.obj", lr2_result_folder / "dagger", 100, 100, &codec);
-    lr2_task10_model(input_folder / "model.obj", lr2_result_folder / "t10_model_filled", 1000, 1000, 5000, 500, &codec);
-    lr2_task10_model(input_folder / "dagger.obj", lr2_result_folder / "t10_dagger_filled", 500, 500, 200, 270, &codec);
-    lr2_task10_model(input_folder / "clock.obj", lr2_result_folder / "t10_clock_filled", 1000, 1000, 40, 500, &codec);
-    lr2_task10_model(input_folder / "12268_banjofrog_v1_L3.obj", lr2_result_folder / "t10_banjofro_filled", 1000, 1000, 40, 500, &codec);
+    #ifndef LR_LATEST
+    lr2_task9_single_triag(lr2_result_folder / "t9_single_triag", &png_buffer, &codec);
+    lr2_task9_single_triag_outofbound(lr2_result_folder / "t9_single_triag_outofbound", &png_buffer, &codec);
+    lr2_task9_single_triag_fulloutofbound(lr2_result_folder / "t9_single_triag_fulloutofbound", &png_buffer, &codec);
+    lr2_task9_multiple_triags_big(lr2_result_folder / "t9_multiple_triags_big", &png_buffer, &codec);
+    lr1_task4_draw_vertices(500, 500, input_folder / "dagger.obj", lr2_result_folder / "dagger", &png_buffer, 100, 100, &codec);
+    lr2_task10_model(input_folder / "model.obj", lr2_result_folder / "t10_model_filled", &png_buffer, 1000, 1000, 5000, 500, &codec);
+    lr2_task10_model(input_folder / "dagger.obj", lr2_result_folder / "t10_dagger_filled", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "clock.obj", lr2_result_folder / "t10_clock_filled", &png_buffer, 1000, 1000, 40, 500, &codec);
+    lr2_task10_model(input_folder / "12268_banjofrog_v1_L3.obj", lr2_result_folder / "t10_banjofro_filled", &png_buffer, 1000, 1000, 40, 500, &codec);
+    lr2_task10_model(input_folder / "modelv2.obj", lr2_result_folder / "t10_modelv2_filled", &png_buffer, 1000, 1000, 300, 500, &codec);
+    lr2_task10_model(input_folder / "12221_Cat_v1_l3.obj", lr2_result_folder / "t10_cat_filled", &png_buffer, 1000, 1000, 10, 500, &codec);
+    lr2_task10_model(input_folder / "genshin_teapot.obj", lr2_result_folder / "t10_genshin_teapot_filled", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "heart.obj", lr2_result_folder / "t10_heart_filled", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "animehead.obj", lr2_result_folder / "t10_animehead_filled", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "shield.obj", lr2_result_folder / "t10_shield_filled", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "boy_demon_red_eyes_horns_teeth_mask_red_skin_cartoon_style_draft.obj", &png_buffer, lr2_result_folder / "t10_boy_demon_red_eyes_horns_teeth_mask_red_skin_cartoon_style_draft_filled", 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "pickachu2.obj", lr2_result_folder / "pickachu2", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "aranara.obj", lr2_result_folder / "aranara", &png_buffer, 500, 500, 200, 270, &codec);
+    lr2_task10_model(input_folder / "Paimon.obj", lr2_result_folder / "Paimon", &png_buffer, 1000, 1000, 47, 500, &codec);
+    lr2_task10_model(input_folder / "Rushia.obj", lr2_result_folder / "Rushia", &png_buffer, 3000, 3000, 1, 500, &codec);
+    lr2_task10_model(input_folder / "nvLogo.obj", lr2_result_folder / "nvLogo", &png_buffer, 500, 500, 20, 270, &codec);
+    lr2_task10_model(input_folder / "elaina.obj", lr2_result_folder / "elaina", &png_buffer, 3000, 3000, 1, 500, &codec);
     #endif
+    std::vector<unsigned char> png_buffer;
+    lr2_task10_model(input_folder / "genshin_teapot.obj", lr2_result_folder / "t10_genshin_teapot_filled", &png_buffer, 500, 500, 200, 270, &codec);
+    #endif
+
+    codec.save_image_file(&png_buffer, lr2_result_folder / "elaina");
 
     codec.~image_codec();
     std::cout << "that's it" << std::endl;

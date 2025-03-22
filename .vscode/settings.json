@@ -86,6 +86,10 @@
         "csignal": "cpp",
         "*.inc": "cpp",
         "filesystem": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "__verbose_abort": "cpp",
+        "*.moc": "cpp",
+        "qmainwindow": "cpp",
+        "qscrollbar": "cpp"
     }
 }

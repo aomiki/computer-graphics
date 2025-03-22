@@ -2,6 +2,14 @@
 
 #Main compiler
 CXX = g++
+QT_DIR=/usr/lib/qt6
+
+#GUI
+GUI_SRC=gui/mainwindow.cpp gui/moc_mainwindow.cpp
+GUI=$(patsubst %.cpp,%.o,$(GUI_SRC))
+
+LDFLAGS_GUI=-I/usr/include/qt6 -I/usr/include/qt6/QtGui -I/usr/include/qt6/QtCore -I/usr/include/qt6/QtWidgets -I/usr/lib/qt6/mkspecs/linux-g++ -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB -fPIC
+LD_LIBS_GUI=-lQt6Core -lQt6Gui -lQt6Widgets
 
 #Modules
 MODULES_SRC = $(wildcard modules/impls/*.cpp)
@@ -31,18 +39,18 @@ LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos -lcudart -lcudadevrt
 
 #General arguments
 LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
-CXXFLAGS := $(LDFLAGS) $(MODULES) $(LRS) Program.o -g
+CXXFLAGS := $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) Program.o -g
 
 #Compile with LodePNG implementation (link object files)
 graphics-lode.out: HW_ACCEL = LODE_IMPL
-graphics-lode.out: $(MODULES) $(MODULES_SHARED_CPP) $(LRS) $(LODE) Program.o
-	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CPP) $(LODE) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-lode.out
+graphics-lode.out: $(MODULES) $(MODULES_SHARED_CPP) $(LRS) $(LODE) $(GUI) Program.o
+	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CPP) $(LODE) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-lode.out
 
 #Compile with CUDA implementation
 graphics-cuda.out: HW_ACCEL = CUDA_IMPL
-graphics-cuda.out: $(MODULES) $(MODULES_SHARED_CUDA) $(LRS) $(CUDA_MODULES) Program.o
+graphics-cuda.out: $(MODULES) $(MODULES_SHARED_CUDA) $(LRS) $(CUDA_MODULES) $(GUI) Program.o
 	nvcc $(LDFLAGS) -arch=native -dlink -o cuda_modules_linked.o $(MODULES_SHARED_CUDA) $(CUDA_MODULES) $(LDLIBS_CUDA)
-	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CUDA) cuda_modules_linked.o $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-cuda.out
+	$(CXX) $(CXXFLAGS) $(MODULES_SHARED_CUDA) cuda_modules_linked.o $(CUDA_MODULES) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -o graphics-cuda.out
 
 modules/impls_shared/%.cu.o: modules/impls_shared/%.cpp
 	nvcc $(LDFLAGS) -arch=native -x cu -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
@@ -51,13 +59,22 @@ modules/impls_shared/%.cu.o: modules/impls_shared/%.cpp
 %.o: %.cu
 	nvcc $(LDFLAGS) -arch=native -rdc=true --debug --device-debug --cudart shared -o $@ -c $^
 
+gui/moc_mainwindow.cpp: gui/mainwindow.h gui/ui_mainwindow.h
+	$(QT_DIR)/moc $(LDFLAGS) $< -o $@
+
+gui/ui_mainwindow.h: gui/mainwindow.ui
+	$(QT_DIR)/uic gui/mainwindow.ui -o gui/ui_mainwindow.h 
+
+
+gui/mainwindow.o: gui/ui_mainwindow.h
+
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) $(LDFLAGS_CUDA) $(LDLIBS_CUDA) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -g -o $@ -c $^
+	$(CXX) $(LDFLAGS) $(LDFLAGS_CUDA) $(LDFLAGS_GUI) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic -O0 -g -o $@ -c $<
 
 #Clean build files
 clean:
-	rm -f $(MODULES) $(MODULES_SHARED_CUDA) $(MODULES_SHARED_CUDA_LINKED) $(LRS) $(LODE) $(CUDA_MODULES) $(CUDA_MODULES_LINKED) Program.o graphics-lode.out graphics-cuda.out
+	rm -f $(MODULES) $(MODULES_SHARED_CUDA) $(MODULES_SHARED_CUDA_LINKED) $(LRS) $(LODE) $(CUDA_MODULES) $(CUDA_MODULES_LINKED) gui/mainwindow.o gui/moc_mainwindow.cpp gui/ui_mainwindow.h Program.o graphics-lode.out graphics-cuda.out
 
 #Clean program output files
 clean-output-LR1:
