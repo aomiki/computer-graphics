@@ -18,7 +18,7 @@ GUI_SRC=gui/mainwindow.cpp gui/moc_mainwindow.cpp
 GUI=$(patsubst %.cpp,%.o,$(GUI_SRC))
 
 LDFLAGS_GUI=-I/usr/include/qt6 -I/usr/include/qt6/QtGui -I/usr/include/qt6/QtCore -I/usr/include/qt6/QtWidgets -I/usr/lib/qt6/mkspecs/linux-g++ -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB -fPIC
-LD_LIBS_GUI=-lQt6Core -lQt6Gui -lQt6Widgets
+LD_LIBS_GUI=-lQt6Core -lQt6Gui -lQt6Widgets -ltbb
 
 #Modules
 MODULES_SRC = $(wildcard modules/impls/*.cpp)
@@ -48,7 +48,7 @@ LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos -lcudart -lcudadevrt
 
 #General arguments
 LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
-CXXFLAGS := $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) Program.o -g
+CXXFLAGS := -std=c++17 $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) -pthread Program.o -g
 
 #Compile with LodePNG implementation (link object files)
 graphics-lode.out: HW_ACCEL = LODE_IMPL
@@ -79,7 +79,7 @@ gui/mainwindow.o: gui/ui_mainwindow.h
 
 #Target that invokes if *.o file with *.cpp source is required by other targets
 %.o: %.cpp
-	$(CXX) $(LDFLAGS) $(LDFLAGS_CUDA) $(LDFLAGS_GUI) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic $(OPTIMIZATION_FLAGS) -o $@ -c $<
+	$(CXX) -std=c++17 $(LDFLAGS) $(LDFLAGS_CUDA) $(LDFLAGS_GUI) $(LDLIBS_CUDA) $(LD_LIBS_GUI) -D$(HW_ACCEL) -Wall -Wextra -pedantic $(OPTIMIZATION_FLAGS) -o $@ -c $< 
 
 #Clean build files
 clean:

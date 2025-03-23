@@ -90,6 +90,7 @@
         "__verbose_abort": "cpp",
         "*.moc": "cpp",
         "qmainwindow": "cpp",
-        "qscrollbar": "cpp"
+        "qscrollbar": "cpp",
+        "cfenv": "cpp"
     }
 }
