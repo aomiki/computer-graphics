@@ -16,6 +16,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->accept_filename, SIGNAL(clicked()), this, SLOT(acceptFilenameClicked()));
     connect(ui->button_render, SIGNAL(clicked()), this, SLOT(buttonRenderClicked()));
     connect(ui->button_save, SIGNAL(clicked()), this, SLOT(buttonSaveClicked()));
+
+
+    connect(ui->textinp_scale, SIGNAL(valueChanged(int)), this, SLOT(scaleChanged()));
+    connect(ui->textinp_offset, SIGNAL(valueChanged(int)), this, SLOT(offsetChanged()));
+}
+
+void MainWindow::offsetChanged()
+{
+    if (ui->checkBox_interactiveRender->isChecked())
+    {
+        this->buttonRenderClicked();
+    }
+}
+
+void MainWindow::scaleChanged()
+{
+    if (ui->checkBox_interactiveRender->isChecked())
+    {
+        this->buttonRenderClicked();
+    }
 }
 
 void MainWindow::updateImage()
