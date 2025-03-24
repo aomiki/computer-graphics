@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1194</width>
-    <height>806</height>
+    <width>1196</width>
+    <height>808</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -390,7 +390,7 @@ background-color: rgb(151, 174, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>338</width>
-            <height>350</height>
+            <height>371</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -436,12 +436,11 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1194</width>
+     <width>1196</width>
      <height>27</height>
     </rect>
    </property>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>
