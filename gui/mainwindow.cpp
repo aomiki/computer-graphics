@@ -105,6 +105,9 @@ void MainWindow::buttonRenderClicked()
     curr_image->loadFromData(png_buffer->data(), png_buffer->size(), img_format_str.c_str());
 
     updateImage();
+
+    ui->label_vertexCount->setNum((double)curr_vertices->size());
+    ui->label_polygonCount->setNum((double)curr_polygons->size());
 }
 
 void MainWindow::acceptFilenameClicked()
