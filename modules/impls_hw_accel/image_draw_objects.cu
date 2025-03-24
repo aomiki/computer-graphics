@@ -72,7 +72,6 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max
         threadIdx.x + blockDim.x * blockIdx.x + min.x,
         threadIdx.y + blockDim.y * blockIdx.y + min.y
     );
-    unsigned z = threadIdx.z;
 
     if (curr.x >= max.x || curr.y >= max.y)
         return;
@@ -90,19 +89,28 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max
 
             if (zbuffer[interlaced_index] == curr_z)
             {
-                m->get(curr.x, curr.y)[z] = polygon_color[z];
+                for (unsigned i = 0; i < m->components_num; i++)
+                {
+                    m->get(curr.x, curr.y)[i] = polygon_color[i];
+                }
             }
         }
         else
         {
-            m->get(curr.x, curr.y)[z] = polygon_color[z];
+            for (unsigned i = 0; i < m->components_num; i++)
+            {
+                m->get(curr.x, curr.y)[i] = polygon_color[i];
+            }
         }
     }
 };
 
-__global__ void kernel_fill(double* arr, double val)
+__global__ void kernel_fill(double* arr, unsigned size, double val)
 {
-    int i = blockIdx.x;
+    int i = threadIdx.x + blockDim.x * blockIdx.x;;
+
+    if (i >= size)
+        return;
 
     arr[i] = val;
 }
@@ -124,13 +132,12 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
     unsigned poly_width = max.x - min.x;
     unsigned poly_height = max.y - min.y;
 
-    unsigned blocksize_xy = (unsigned)(1024 / img->components_num);
-    unsigned blocksize_1d = (unsigned)sqrt(blocksize_xy);
+    unsigned blocksize_1d = 32; //32*32 = 1024 = max blocksize
 
     unsigned blocknum_x = (unsigned)((poly_width/blocksize_1d) +1);
     unsigned blocknum_y = (unsigned)((poly_height/blocksize_1d) +1);
 
-    dim3 blocksize(blocksize_1d, blocksize_1d, img->components_num);
+    dim3 blocksize(blocksize_1d, blocksize_1d);
     dim3 blocknum(blocknum_x, blocknum_y);
 
     matrix* d_m = transferMatrixToDevice(img);
@@ -250,13 +257,35 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     unsigned poly_width = max.x - min.x;
     unsigned poly_height = max.y - min.y;
 
-    unsigned blocksize_xy = (unsigned)(1024 / m->components_num);
-    unsigned blocksize_1d = (unsigned)sqrtf(blocksize_xy);
+    unsigned total_submatrix_size = poly_width * poly_height;
+
+    unsigned poly_total_blocksize = 32;
+    if (total_submatrix_size >= 4480)
+    {
+        poly_total_blocksize = 128;
+    }
+
+    if (total_submatrix_size >= 8960)
+    {
+        poly_total_blocksize = 256;
+    }
+
+    if (total_submatrix_size >= 17920)
+    {
+        poly_total_blocksize = 512;
+    }
+
+    if (total_submatrix_size >= 35840)
+    {
+        poly_total_blocksize = 1024;
+    }
+
+    unsigned blocksize_1d = (unsigned)sqrtf(poly_total_blocksize);
 
     unsigned blocknum_x = (unsigned)((poly_width/blocksize_1d) +1);
     unsigned blocknum_y = (unsigned)((poly_height/blocksize_1d) +1);
 
-    dim3 blocksize(blocksize_1d, blocksize_1d, m->components_num);
+    dim3 blocksize(blocksize_1d, blocksize_1d);
     dim3 blocknum(blocknum_x, blocknum_y);
 
     cudaStream_t s;
@@ -295,24 +324,44 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
         blocksize = 1024;
     }
 */
-    unsigned blocknum = (unsigned)((polygons->size() / blocksize) + 1);
 
     matrix* d_m = transferMatrixToDevice(img);
 
     vertex* d_vertices;
     polygon* d_polygons;
     double* d_zbuffer;
-    unsigned char* d_polyColors;
 
     cuda_log(cudaMalloc(&d_vertices, vertices->size() * sizeof(vertex)));
     cuda_log(cudaMalloc(&d_polygons, polygons->size() * sizeof(polygon)));
-    cuda_log(cudaMalloc(&d_polyColors, polygons->size() * sizeof(unsigned char)));
-    cudaMalloc(&d_zbuffer, img->width * img->height * sizeof(double));
+    cudaMalloc(&d_zbuffer, img->size() * sizeof(double));
 
     cuda_log(cudaMemcpy(d_vertices, vertices->data(), vertices->size() * sizeof(vertex), cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_polygons, polygons->data(), polygons->size() * sizeof(polygon), cudaMemcpyHostToDevice));
 
-    kernel_fill<<<img->width * img->height, 1>>>(d_zbuffer, std::numeric_limits<double>().max());
+    unsigned zbuf_total_blocksize = 32;
+    if (img->size() >= 4480)
+    {
+        zbuf_total_blocksize = 128;
+    }
+
+    if (img->size() >= 8960)
+    {
+        zbuf_total_blocksize = 256;
+    }
+
+    if (img->size() >= 17920)
+    {
+        zbuf_total_blocksize = 512;
+    }
+
+    if (img->size() >= 35840)
+    {
+        zbuf_total_blocksize = 1024;
+    }
+
+    kernel_fill<<<(unsigned)(img->size()/zbuf_total_blocksize +1), zbuf_total_blocksize>>>(d_zbuffer, img->size(), std::numeric_limits<double>().max());
+
+    unsigned blocknum = (unsigned)((polygons->size() / blocksize) + 1);
 
     //by default the limit on the number of simultaneous kernel launches is imposed 
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
@@ -320,12 +369,9 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer);
     cuda_log(cudaDeviceSynchronize());
 
-    long long* h_zbuffer = new long long[img->width * img->height];
-    unsigned char* h_polyColors = new unsigned char[polygons->size()];
-    cuda_log(cudaMemcpy(h_polyColors, d_polyColors, polygons->size() * sizeof(unsigned char), cudaMemcpyDeviceToHost));
-    cuda_log(cudaMemcpy(h_zbuffer, d_zbuffer, img->width * img->height * sizeof(long long), cudaMemcpyDeviceToHost));
-
     transferMatrixDataToHost(img, d_m);
+
+    cudaFree(d_zbuffer);
 }
 
 #include "_image_draw_objects_instances.h"

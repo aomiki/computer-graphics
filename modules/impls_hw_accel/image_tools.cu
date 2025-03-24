@@ -20,7 +20,28 @@ __global__ void kernel_fillInterlaced(matrix* m, unsigned char* components)
 /// @param components Значение которое нужно установить
 void matrix::fill(unsigned char *value)
 {
-    int blocksize_2d = (int)(1024/this->components_num);
+    unsigned total_blocksize = 32;
+    if (size() >= 4480)
+    {
+        total_blocksize = 128;
+    }
+
+    if (size() >= 8960)
+    {
+        total_blocksize = 256;
+    }
+
+    if (size() >= 17920)
+    {
+        total_blocksize = 512;
+    }
+
+    if (size() >= 35840)
+    {
+        total_blocksize = 1024;
+    }
+
+    int blocksize_2d = (int)(total_blocksize/this->components_num);
     int blocksize_1d = (int)sqrt(blocksize_2d);
 
     int blocksnum_x = (int)(this->width / blocksize_1d + 1);
