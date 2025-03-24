@@ -15,4 +15,6 @@ void draw_polygons(matrix_color<E>* img, std::vector<vertex>* vertices, E polyg_
 template<typename E>
 void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, int scale, int offset);
 
+__shared_func__ void calc_triangle_boundaries(matrix_coord& min_coord, matrix_coord& max_coord, vertex& v1, vertex& v2, vertex& v3, matrix& m);
+
 #endif

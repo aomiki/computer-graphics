@@ -1,7 +1,7 @@
 #include <cmath>
 #include <algorithm>
 #include <random>
-
+#include <cstring>
 #include "vertex_tools.h"
 #include "image_draw_objects.h"
 
@@ -16,91 +16,120 @@ void draw_vertices(matrix_color<E>* m, std::vector<vertex>* vertices, E vertex_c
     }
 };
 
-template<typename E>
-void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, vertex v3)
+void drawPolygonInternal(matrix* img, matrix_coord min, matrix_coord max, unsigned char* polygon_color, vertex v1, vertex v2, vertex v3, std::vector <double>* zbuffer = nullptr)
 {
-    double xmin = min(min(v1.x, v2.x), v3.x);
-    double ymin = min(min(v1.y, v2.y), v3.y);
-
-    double xmax = max(max(v1.x, v2.x), v3.x)+1;
-    double ymax = max(max(v1.y, v2.y), v3.y)+1;
-
-    //crop to img boundaries
-    if (xmin < 0)
-    {
-        xmin = 0;
-    }
-    else if(xmax > img->width)
-    {
-        xmax = img->width;
-    }
-
-    if (ymin < 0)
-    {
-        ymin = 0;
-    }
-    else if (ymax > img->height)
-    {
-        ymax = img->height;
-    }
-
-    unsigned xmin_i = round(xmin);
-    unsigned xmax_i = round(xmax);
-
-    unsigned ymin_i = round(ymin);
-    unsigned ymax_i = round(ymax);
-
     matrix_coord curr(0, 0);
-    for (curr.x = xmin_i; curr.x < xmax_i; curr.x++)
+    for (curr.x = min.x; curr.x < max.x; curr.x++)
     {
-        for (curr.y = ymin_i; curr.y < ymax_i; curr.y++)
+        for (curr.y = min.y; curr.y < max.y; curr.y++)
         {
             vertex baryc = get_barycentric_coords(curr, v1, v2, v3);
-
-            if ((baryc.x >= 0) && (baryc.y >= 0) && (baryc.z >= 0))
+            if (baryc.x >= 0 && baryc.y >= 0 && baryc.z >= 0)
             {
-                img->set(curr, polyg_color);
+                
+                if (zbuffer == nullptr)
+                {
+                    std::memcpy(img->get(curr.x, curr.y), polygon_color, img->components_num);
+                }
+                else
+                {
+                    double interpolated_z = baryc.x * v1.z + baryc.y * v2.z + baryc.z * v3.z;
+                    int buffer_index = curr.y * img->width + curr.x;
+                    if (interpolated_z < (*zbuffer)[buffer_index])
+                    {
+                        (*zbuffer)[buffer_index] = interpolated_z;
+                        std::memcpy(img->get(curr.x, curr.y), polygon_color, img->components_num); 
+                    }
+                }
+                
             }
         }
     }
-};
+}
+
+template<typename E>
+void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, vertex v3)
+{
+    matrix_coord min(0,0);
+    matrix_coord max(0,0);
+
+    calc_triangle_boundaries(min, max, v1, v2, v3, *img);
+
+    if (max.x <= min.x || max.y <= min.y)
+    {
+        return;
+    }
+    unsigned char* vals = new unsigned char[img->components_num];
+    img->element_to_c_arr(vals, polyg_color);
+    drawPolygonInternal(img, min, max, vals, v1, v2, v3);
+}
 
 template <typename E>
-inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, int scale, int offset)
+void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, int scale, int offset)
 {
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_int_distribution<unsigned char> dist(0, 255);
-
-
+    std::vector<double> zbuffer(img->width * img->height, std::numeric_limits<double>::max());
     for (size_t i = 0; i < polygons->size(); i++)
     {
+        vertex poly_v1(
+        (*vertices)[(*polygons)[i].vertex_index1-1].x,
+        (*vertices)[(*polygons)[i].vertex_index1-1].y,
+        (*vertices)[(*polygons)[i].vertex_index1-1].z
+        );
+        vertex poly_v2(
+        (*vertices)[(*polygons)[i].vertex_index2-1].x,
+        (*vertices)[(*polygons)[i].vertex_index2-1].y,
+        (*vertices)[(*polygons)[i].vertex_index2-1].z
+        );
+        vertex poly_v3(
+        (*vertices)[(*polygons)[i].vertex_index3-1].x,
+        (*vertices)[(*polygons)[i].vertex_index3-1].y,
+        (*vertices)[(*polygons)[i].vertex_index3-1].z
+        );
         unsigned char* c_polyg_color = new unsigned char[img->components_num];
-        for (unsigned i = 0; i < img->components_num; i++)
+        vertex poly_vec1, poly_vec2;
+        poly_vertices_to_vectors(poly_v1, poly_v2, poly_v3, poly_vec1, poly_vec2);
+
+        vertex n = normal(poly_vec1, poly_vec2);
+
+        // Направление камеры (по оси Z)
+        vertex camera_vec(0.0, 0.0, 1.0);
+        double d = dot(n, camera_vec);
+        double viewing_angle_cosine = d/(length(n)*length(camera_vec));
+
+        if (viewing_angle_cosine >= 0)
         {
-            c_polyg_color[i] = dist(mt);
+            delete[] c_polyg_color;
+            continue;
         }
-    
-        E polyg_color = img->c_arr_to_element(c_polyg_color);
+        
+        c_polyg_color[0] = (unsigned char)(-255.0 * viewing_angle_cosine + 0.5);
+
+        matrix_coord min(0,0);
+        matrix_coord max(0,0);
 
         vertex v1{
-            scale * (*vertices)[(*polygons)[i].vertex_index1-1].x + offset,
-            img->height - (scale * (*vertices)[(*polygons)[i].vertex_index1-1].y + offset)
-        };
+        scale * poly_v1.x + offset,
+        img->height - (scale * poly_v1.y + offset),
+        poly_v1.z
+                };
         vertex v2{
-            scale * (*vertices)[(*polygons)[i].vertex_index2-1].x + offset,
-            img->height - (scale * (*vertices)[(*polygons)[i].vertex_index2-1].y + offset)
-        };
+        scale * poly_v2.x + offset,
+        img->height - (scale * poly_v2.y + offset),
+        poly_v2.z
+                };
         vertex v3{
-            scale * (*vertices)[(*polygons)[i].vertex_index3-1].x + offset,
-            img->height - (scale * (*vertices)[(*polygons)[i].vertex_index3-1].y + offset)
-        };
+        scale * poly_v3.x + offset,
+        img->height - (scale * poly_v3.y + offset),
+        poly_v3.z
+                };
 
-        draw_polygon(img, polyg_color, v1, v2, v3);
-
-        delete [] c_polyg_color;
-    }
-
+        calc_triangle_boundaries(min, max, v1, v2, v3, *img);
+        if (max.x <= min.x || max.y <= min.y)
+        {
+            return;
+        }
+        drawPolygonInternal(img, min, max, c_polyg_color, v1, v2, v3, &zbuffer);
+        }
 }
 
 #include "_image_draw_objects_instances.h"
