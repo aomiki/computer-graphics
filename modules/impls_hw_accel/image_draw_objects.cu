@@ -212,11 +212,6 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
     delete h_vals;
 };
 
-__global__ void kernel_free(void* p)
-{
-    free(p);
-}
-
 /// @brief Draw polygons and paint them using random values.
 /// @param m image matrix
 /// @param vertices raw vertices
@@ -227,7 +222,7 @@ __global__ void kernel_free(void* p)
 /// @param offset how much to offset polygons
 /// @param curState used for random numbers generator
 /// @param seed used for random numbers generator
-__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, double* zbuffer)
+__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, double* zbuffer, unsigned char* c_polyg_color_buffer)
 {
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -237,9 +232,11 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
         return;
     }
 
-    vertex* poly_v1 = vertices + (polygons[i].vertex_index1-1);
-    vertex* poly_v2 = vertices + (polygons[i].vertex_index2-1);
-    vertex* poly_v3 = vertices + (polygons[i].vertex_index3-1);
+    polygon* curr_poly = polygons + i;
+
+    vertex* poly_v1 = vertices + (curr_poly->vertex_index1-1);
+    vertex* poly_v2 = vertices + (curr_poly->vertex_index2-1);
+    vertex* poly_v3 = vertices + (curr_poly->vertex_index3-1);
 
     vertex poly_vec1;
     vertex poly_vec2;
@@ -252,11 +249,10 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     double d = dot(n, camera_vec);
     double viewing_angle_cosine = d/(length(n)*length(camera_vec));
 
-    unsigned char* c_polyg_color = (unsigned char*)malloc(m->components_num);
+    unsigned char* c_polyg_color = c_polyg_color_buffer + i*3;
 
     if (viewing_angle_cosine >= 0)
     {
-        free(c_polyg_color);
         return;
     }
 
@@ -289,7 +285,6 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 
     if (max.x <= min.x || max.y <= min.y)
     {
-        free(c_polyg_color);
         return;
     }
 
@@ -334,7 +329,6 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
 
     kernel_drawPolygon<<<blocknum, blocksize, 0, s>>>(m, min, max, c_polyg_color, v1, v2, v3, zbuffer);
-    kernel_free<<<1, 1, 0, s>>>(c_polyg_color);
 };
 
 template <typename E>
@@ -382,6 +376,9 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     unsigned char* d_arr_interlaced;
     const unsigned d_arr_interlaced_bytes = img->size_interlaced();
 
+    unsigned char* c_polyg_color_buffer;
+    const unsigned c_polyg_color_buffer_bytes = polygons->size() * img->components_num;
+
     char* d_membuf;
     cuda_log(cudaMalloc(
         &d_membuf,
@@ -389,7 +386,8 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
         d_vertices_bytes +
         d_polygons_bytes +
         d_m_bytes + 
-        d_arr_interlaced_bytes
+        d_arr_interlaced_bytes + 
+        c_polyg_color_buffer_bytes
     ));
 
     unsigned mem_offset = 0;
@@ -408,6 +406,9 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
 
     d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += d_arr_interlaced_bytes;
+
+    c_polyg_color_buffer = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += c_polyg_color_buffer_bytes;
 
     transferMatrixToDevice(d_m, d_arr_interlaced, img);
 
@@ -442,7 +443,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     //by default the limit on the number of simultaneous kernel launches is imposed 
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
 
-    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer);
+    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer, c_polyg_color_buffer);
     cuda_log(cudaDeviceSynchronize());
 
     transferMatrixDataToHost(img, d_m, false);
