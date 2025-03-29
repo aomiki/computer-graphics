@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>812</height>
+    <width>1809</width>
+    <height>1239</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,7 +34,7 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <layout class="QHBoxLayout" name="horizontalLayout_graphicsView_labels">
         <item>
          <widget class="QLabel" name="label_vertexCountLabel">
           <property name="styleSheet">
@@ -200,6 +200,129 @@ background-color: rgb(151, 174, 255);</string>
         </widget>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_offset">
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_offset_x">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>X </string>
+           </property>
+           <property name="minimum">
+            <double>-999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999999.989999999990687</double>
+           </property>
+           <property name="singleStep">
+            <double>10.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_offset_y">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>Y </string>
+           </property>
+           <property name="minimum">
+            <double>-999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999999.989999999990687</double>
+           </property>
+           <property name="singleStep">
+            <double>10.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_offset_z">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>Z </string>
+           </property>
+           <property name="minimum">
+            <double>-999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999999.989999999990687</double>
+           </property>
+           <property name="singleStep">
+            <double>10.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_rotation">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(56, 66, 255);</string>
+         </property>
+         <property name="text">
+          <string>Rotatation:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_rotation">
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_rotation_x">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>X </string>
+           </property>
+           <property name="minimum">
+            <double>-999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999999.989999999990687</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_rotation_y">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>Y </string>
+           </property>
+           <property name="minimum">
+            <double>-999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999999.989999999990687</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_rotation_z">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>Z </string>
+           </property>
+           <property name="minimum">
+            <double>-999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999999.989999999990687</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QCheckBox" name="checkBox_interactiveRender">
          <property name="styleSheet">
           <string notr="true">color: rgb(56, 66, 255);</string>
@@ -210,12 +333,12 @@ background-color: rgb(151, 174, 255);</string>
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <layout class="QHBoxLayout" name="horizontalLayout_dimensions">
          <property name="topMargin">
           <number>10</number>
          </property>
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <layout class="QVBoxLayout" name="verticalLayout_dim_width">
            <property name="spacing">
             <number>6</number>
            </property>
@@ -254,7 +377,7 @@ background-color: rgb(151, 174, 255);</string>
           </layout>
          </item>
          <item>
-          <widget class="QWidget" name="verticalWidget_times" native="true">
+          <widget class="QWidget" name="verticalWidget_dim_times" native="true">
            <property name="maximumSize">
             <size>
              <width>22</width>
@@ -315,7 +438,7 @@ background-color: rgb(151, 174, 255);</string>
           </widget>
          </item>
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
+          <layout class="QVBoxLayout" name="verticalLayout_dim_height">
            <property name="spacing">
             <number>6</number>
            </property>
@@ -400,7 +523,7 @@ background-color: rgb(151, 174, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>338</width>
-            <height>346</height>
+            <height>656</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -446,7 +569,7 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1200</width>
+     <width>1809</width>
      <height>27</height>
     </rect>
    </property>

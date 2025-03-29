@@ -9,3 +9,6 @@ __shared_func__ vertex normal(vertex& vec1, vertex& vec2);
 __shared_func__ void poly_vertices_to_vectors(
     vertex& poly_v1, vertex& poly_v2, vertex& poly_v3,
     vertex& vec1, vertex& vec2);
+
+
+void transformVertices(vertex* vertices, unsigned n_vert, double* offsets, double* angles);

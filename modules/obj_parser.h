@@ -18,9 +18,16 @@ struct vertex{
           this->z = z;
      }
 
-     double x;
-     double y;
-     double z;
+     union {
+          struct {
+               double x;
+               double y;
+               double z;
+          };
+          struct {
+               double array[3];
+          };
+     };
 };
 
 struct polygon{

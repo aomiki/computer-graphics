@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "LR2.h"
+#include "vertex_tools.h"
 #include <image_draw_objects.h>
 #include <QScrollBar>
 #include <filesystem>
@@ -82,6 +83,11 @@ void MainWindow::buttonRenderClicked()
     {
         png_buffer = new std::vector<unsigned char>();
     }
+
+    double offsets[3] = { ui->spinBox_offset_x->value(), ui->spinBox_offset_y->value(), ui->spinBox_offset_z->value() };
+    double angles[3] = { ui->spinBox_rotation_x->value(), ui->spinBox_rotation_y->value(), ui->spinBox_rotation_z->value() };
+
+    transformVertices(curr_vertices->data(), curr_vertices->size(), offsets, angles);
 
     if (renderType == "polygons")
     {

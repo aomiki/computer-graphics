@@ -6,6 +6,11 @@ void cuda_log(cudaError_t err)
     LAST_CUDA_ERROR_DESC = cudaGetErrorString(err);
 }
 
+void cuda_log(cublasStatus_t err)
+{
+    LAST_CUBLAS_ERROR = err;
+}
+
 matrix* transferMatrixToDevice(matrix* h_m)
 {
     matrix* d_m;
