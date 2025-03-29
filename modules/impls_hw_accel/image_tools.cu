@@ -50,17 +50,43 @@ void matrix::fill(unsigned char *value)
     dim3 blockSize(blocksize_1d, blocksize_1d, this->components_num);
     dim3 gridSize(blocksnum_x, blocksnum_y);
 
-    matrix* d_m = transferMatrixToDevice(this);
+    matrix* d_m;
+    const unsigned d_m_bytes = sizeof(matrix);
+
+    unsigned char* d_arr_interlaced;
+    const unsigned d_arr_interlaced_bytes = size_interlaced();
 
     unsigned char* d_vals;
-    cuda_log(cudaMalloc(&d_vals, this->components_num * sizeof(unsigned char)));
-    cuda_log(cudaMemcpy(d_vals, value, this->components_num * sizeof(unsigned char), cudaMemcpyHostToDevice));
+    const unsigned d_vals_bytes = this->components_num * sizeof(unsigned char);
+
+    char* d_membuf;
+    cuda_log(cudaMalloc(
+        &d_membuf,
+        d_m_bytes +
+        d_arr_interlaced_bytes +
+        d_vals_bytes
+    ));
+
+    unsigned mem_offset = 0;
+
+    d_m = (matrix*)d_membuf;
+    mem_offset += d_m_bytes;
+
+    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_arr_interlaced_bytes;
+
+    d_vals = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_vals_bytes;
+
+    transferMatrixToDevice(d_m, d_arr_interlaced, this);
+
+    cuda_log(cudaMemcpy(d_vals, value, d_vals_bytes, cudaMemcpyHostToDevice));
 
     kernel_fillInterlaced<<<gridSize, blockSize>>>(d_m, d_vals);
     cuda_log(cudaDeviceSynchronize());
     fflush(stdout);
 
-    transferMatrixDataToHost(this, d_m);
+    transferMatrixDataToHost(this, d_m, false);
 
-    cuda_log(cudaFree(d_vals));
+    cuda_log(cudaFree(d_membuf));
 }

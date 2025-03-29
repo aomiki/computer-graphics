@@ -1,5 +1,3 @@
-#include <curand.h>
-#include <curand_kernel.h>
 #include <cuda/std/limits>
 
 #include "vertex_tools.h"
@@ -31,26 +29,56 @@ void draw_vertices(matrix_color<E>* m, std::vector<vertex>* vertices, E vertex_c
 
     dim3 blockSize(block_length, m->components_num);
 
-    matrix* d_m = transferMatrixToDevice(m);
-
-    unsigned char* d_vals;
-    unsigned char* h_vals = new unsigned char[m->components_num];
     vertex* d_vector;
-    cuda_log(cudaMalloc(&d_vals, m->components_num * sizeof(unsigned char)));
-    cuda_log(cudaMalloc(&d_vector, vertices->size() * sizeof(vertex)));
+    const unsigned d_vector_bytes = vertices->size() * sizeof(vertex);
+
+    matrix* d_m;
+    const unsigned d_m_bytes = sizeof(matrix);
+
+    unsigned char* d_arr_interlaced;
+    const unsigned d_arr_interlaced_bytes = m->size_interlaced();
+    
+    unsigned char* d_vals;
+    const unsigned d_vals_bytes = m->components_num * sizeof(unsigned char);
+
+    char* d_membuf;
+    cuda_log(cudaMalloc(
+        &d_membuf,
+        d_vector_bytes +
+        d_m_bytes +
+        d_arr_interlaced_bytes +
+        d_vals_bytes
+    ));
+
+    unsigned mem_offset = 0;
+
+    d_vector = (vertex*)(d_membuf + mem_offset);
+    mem_offset += d_vector_bytes;
+
+    d_m = (matrix*)(d_membuf + mem_offset);
+    mem_offset += d_m_bytes;
+
+    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_arr_interlaced_bytes;
+
+    d_vals = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_vals_bytes;
+
+    transferMatrixToDevice(d_m, d_arr_interlaced, m);
+
+    unsigned char* h_vals = new unsigned char[m->components_num];
 
     m->element_to_c_arr(h_vals, vertex_color);
-    cuda_log(cudaMemcpy(d_vals, h_vals, m->components_num * sizeof(unsigned char), cudaMemcpyHostToDevice));
-    cuda_log(cudaMemcpy(d_vector, vertices->data(), vertices->size() * sizeof(vertex), cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(d_vals, h_vals, d_vals_bytes, cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(d_vector, vertices->data(), d_vector_bytes, cudaMemcpyHostToDevice));
 
     kernel_drawVertices<<<block_num, blockSize>>>(d_m, d_vector, vertices->size(), d_vals, scale, offset);
 
     cuda_log(cudaDeviceSynchronize());
 
-    transferMatrixDataToHost(m, d_m);
+    transferMatrixDataToHost(m, d_m, false);
 
-    cuda_log(cudaFree(d_vals));
-    cuda_log(cudaFree(d_vector));
+    cuda_log(cudaFree(d_membuf));
     
     delete h_vals;
 };
@@ -140,21 +168,47 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
     dim3 blocksize(blocksize_1d, blocksize_1d);
     dim3 blocknum(blocknum_x, blocknum_y);
 
-    matrix* d_m = transferMatrixToDevice(img);
+    matrix* d_m;
+    const unsigned d_m_bytes = sizeof(matrix);
+
+    unsigned char* d_arr_interlaced;
+    const unsigned d_arr_interlaced_bytes = img->size_interlaced();
 
     unsigned char* d_vals;
+    const unsigned d_vals_bytes = img->components_num * sizeof(unsigned char);
+
+    char* d_membuf;
+    cuda_log(cudaMalloc(
+        &d_membuf,
+        d_m_bytes +
+        d_arr_interlaced_bytes +
+        d_vals_bytes
+    ));
+
+    unsigned mem_offset = 0;
+
+    d_m = (matrix*)d_membuf;
+    mem_offset += d_m_bytes;
+
+    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_arr_interlaced_bytes;
+
+    d_vals = (unsigned char*)(d_membuf += mem_offset);
+    mem_offset += d_vals_bytes;
+    
+    transferMatrixToDevice(d_m, d_arr_interlaced, img);
+
     unsigned char* h_vals = new unsigned char[img->components_num];
-    cuda_log(cudaMalloc(&d_vals, img->components_num * sizeof(unsigned char)));
 
     img->element_to_c_arr(h_vals, polyg_color);
-    cuda_log(cudaMemcpy(d_vals, h_vals, img->components_num * sizeof(unsigned char), cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(d_vals, h_vals, d_vals_bytes, cudaMemcpyHostToDevice));
 
     kernel_drawPolygon<<<blocknum, blocksize>>>(d_m, matrix_coord(min.x, min.y), matrix_coord(max.x, max.y), d_vals, v1, v2, v3);
 
     cuda_log(cudaDeviceSynchronize());
 
-    transferMatrixDataToHost(img, d_m);
-    cuda_log(cudaFree(d_vals));
+    transferMatrixDataToHost(img, d_m, false);
+    cuda_log(cudaFree(d_membuf));
     delete h_vals;
 };
 
@@ -183,26 +237,14 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
         return;
     }
 
-    vertex poly_v1(
-        vertices[polygons[i].vertex_index1-1].x,
-        vertices[polygons[i].vertex_index1-1].y,
-        vertices[polygons[i].vertex_index1-1].z
-    );
-    vertex poly_v2(
-        vertices[polygons[i].vertex_index2-1].x,
-        vertices[polygons[i].vertex_index2-1].y,
-        vertices[polygons[i].vertex_index2-1].z
-    );
-    vertex poly_v3{
-        vertices[polygons[i].vertex_index3-1].x,
-        vertices[polygons[i].vertex_index3-1].y,
-        vertices[polygons[i].vertex_index3-1].z
-    };
+    vertex* poly_v1 = vertices + (polygons[i].vertex_index1-1);
+    vertex* poly_v2 = vertices + (polygons[i].vertex_index2-1);
+    vertex* poly_v3 = vertices + (polygons[i].vertex_index3-1);
 
     vertex poly_vec1;
     vertex poly_vec2;
 
-    poly_vertices_to_vectors(poly_v1, poly_v2, poly_v3, poly_vec1, poly_vec2);
+    poly_vertices_to_vectors(*poly_v1, *poly_v2, *poly_v3, poly_vec1, poly_vec2);
 
     vertex n = normal(poly_vec1, poly_vec2);
 
@@ -222,19 +264,19 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 
     //retrieve polygon's vertices and scale them
     vertex v1{
-        scale * poly_v1.x + offset,
-        m->height - (scale * poly_v1.y + offset),
-        poly_v1.z
+        scale * poly_v1->x + offset,
+        m->height - (scale * poly_v1->y + offset),
+        poly_v1->z
     };
     vertex v2{
-        scale * poly_v2.x + offset,
-        m->height - (scale * poly_v2.y + offset),
-        poly_v2.z
+        scale * poly_v2->x + offset,
+        m->height - (scale * poly_v2->y + offset),
+        poly_v2->z
     };
     vertex v3{
-        scale * poly_v3.x + offset,
-        m->height - (scale * poly_v3.y + offset),
-        poly_v3.z
+        scale * poly_v3->x + offset,
+        m->height - (scale * poly_v3->y + offset),
+        poly_v3->z
     };
 
     //printf("%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u\n", i, poly_v1.x, poly_v1.y, poly_v1.z, poly_v2.x, poly_v2.y, poly_v2.z, poly_v3.x, poly_v3.y, poly_v3.z, viewing_angle_cosine, c_polyg_color[0]);
@@ -325,18 +367,52 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     }
 */
 
-    matrix* d_m = transferMatrixToDevice(img);
+    double* d_zbuffer;
+    const unsigned d_zbuffer_bytes = img->size() * sizeof(double);
 
     vertex* d_vertices;
+    const unsigned d_vertices_bytes = vertices->size() * sizeof(vertex);
+
     polygon* d_polygons;
-    double* d_zbuffer;
+    const unsigned d_polygons_bytes = polygons->size() * sizeof(polygon);
 
-    cuda_log(cudaMalloc(&d_vertices, vertices->size() * sizeof(vertex)));
-    cuda_log(cudaMalloc(&d_polygons, polygons->size() * sizeof(polygon)));
-    cudaMalloc(&d_zbuffer, img->size() * sizeof(double));
+    matrix* d_m;
+    const unsigned d_m_bytes = sizeof(matrix);
 
-    cuda_log(cudaMemcpy(d_vertices, vertices->data(), vertices->size() * sizeof(vertex), cudaMemcpyHostToDevice));
-    cuda_log(cudaMemcpy(d_polygons, polygons->data(), polygons->size() * sizeof(polygon), cudaMemcpyHostToDevice));
+    unsigned char* d_arr_interlaced;
+    const unsigned d_arr_interlaced_bytes = img->size_interlaced();
+
+    char* d_membuf;
+    cuda_log(cudaMalloc(
+        &d_membuf,
+        d_zbuffer_bytes +
+        d_vertices_bytes +
+        d_polygons_bytes +
+        d_m_bytes + 
+        d_arr_interlaced_bytes
+    ));
+
+    unsigned mem_offset = 0;
+
+    d_zbuffer = (double*)(d_membuf + mem_offset);
+    mem_offset += d_zbuffer_bytes;
+
+    d_vertices = (vertex*)(d_membuf + mem_offset);
+    mem_offset += d_vertices_bytes;
+
+    d_polygons = (polygon*)(d_membuf + mem_offset);
+    mem_offset += d_polygons_bytes;
+
+    d_m = (matrix*)(d_membuf + mem_offset);
+    mem_offset += d_m_bytes;
+
+    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_arr_interlaced_bytes;
+
+    transferMatrixToDevice(d_m, d_arr_interlaced, img);
+
+    cuda_log(cudaMemcpy(d_vertices, vertices->data(), d_vertices_bytes, cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(d_polygons, polygons->data(), d_polygons_bytes, cudaMemcpyHostToDevice));
 
     unsigned zbuf_total_blocksize = 32;
     if (img->size() >= 4480)
@@ -369,9 +445,9 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer);
     cuda_log(cudaDeviceSynchronize());
 
-    transferMatrixDataToHost(img, d_m);
+    transferMatrixDataToHost(img, d_m, false);
 
-    cudaFree(d_zbuffer);
+    cudaFree(d_membuf);
 }
 
 #include "_image_draw_objects_instances.h"

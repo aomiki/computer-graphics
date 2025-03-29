@@ -11,7 +11,7 @@ static std::string LAST_CUDA_ERROR_DESC = "";
 
 void cuda_log(cublasStatus_t err);
 void cuda_log(cudaError_t err);
-matrix* transferMatrixToDevice(matrix* h_m);
+void transferMatrixToDevice(matrix* d_m, unsigned char* d_arr_interlaced, matrix* h_m);
 void transferMatrixDataToHost(matrix* h_m, matrix* d_m, bool do_free = true);
 
 #endif
