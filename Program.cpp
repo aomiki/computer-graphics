@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
 
     codec.~image_codec();
     std::cout << "that's it" << std::endl;
+    
 }
 
 template<typename E>

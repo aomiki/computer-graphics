@@ -1,6 +1,7 @@
 #include <cmath> 
 #include "LR2.h"
 #include "image_draw_objects.h"
+#include "vertex_tools.h"
 
 void lr2_task9_single_triag(std::string out_path, image_codec *codec)
 {
@@ -93,11 +94,15 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     matrix.fill(255);
     std::vector <vertex> vertices;
     std::vector <polygon> polygons;
+    vertex v;
     readObj(in_path, &vertices, &polygons);
+    
+    unsigned int offsets[3] = {1000, 1000, 0};
+    double angles[3] = {0, 0, 1.57}; 
+    transformVertices(vertices.data(), vertices.size() , offsets, angles);
 
     unsigned char modelColor[3] = { 255, 255, 255 };
 
     draw_polygons_filled(&matrix, &vertices, &polygons, scale, offset, modelColor);
-
     codec->encode(png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
 }
