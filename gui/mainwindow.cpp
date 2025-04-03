@@ -4,6 +4,7 @@
 #include "vertex_tools.h"
 #include <image_draw_objects.h>
 #include <QScrollBar>
+#include <QColorDialog>
 #include <filesystem>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -20,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->accept_filename, SIGNAL(clicked()), this, SLOT(acceptFilenameClicked()));
     connect(ui->button_render, SIGNAL(clicked()), this, SLOT(buttonRenderClicked()));
     connect(ui->button_save, SIGNAL(clicked()), this, SLOT(buttonSaveClicked()));
+    connect(ui->pushButton_bg_colorDialog, SIGNAL(clicked()), this, SLOT(chooseBgColorClicked()));
 
     connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
     connect(ui->spinBox_scaleY, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
@@ -34,6 +36,19 @@ MainWindow::MainWindow(QWidget *parent)
      
     connect(ui->textinp_width, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
     connect(ui->textinp_height, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
+}
+
+void MainWindow::chooseBgColorClicked()
+{
+    QColorDialog colorPickerDialog;
+
+    QColor chosenColor = colorPickerDialog.getColor(QColor(curr_bgColor[0], curr_bgColor[1], curr_bgColor[2]));
+
+    curr_bgColor[0] = chosenColor.red();
+    curr_bgColor[1] = chosenColor.green();
+    curr_bgColor[2] = chosenColor.blue();
+
+    renderParamsChanged();
 }
 
 void MainWindow::syncLockedScales()
@@ -78,6 +93,28 @@ void MainWindow::updateImage()
     ui->graphicsView_image->setScene(scene);
 }
 
+template <typename T>
+void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double* offsets, double* angles, double scaleX, double scaleY)
+{
+    std::vector<vertex> transformed_vertices(vertices->size());
+    transformVertices(transformed_vertices.data(), vertices->data(), vertices->size(), offsets, angles);
+
+    if (renderType == "polygons")
+    {
+        draw_polygons_filled(matrix, &transformed_vertices, polygons, scaleX, scaleY);
+    }
+    else if (renderType == "vertices")
+    {
+        unsigned char color[3] = {0, 0, 0};
+        draw_vertices(matrix, &transformed_vertices, matrix->c_arr_to_element(color), scaleX, scaleY);
+    }
+    else
+    {
+        //log("unsupported render type");
+        return;
+    }
+}
+
 void MainWindow::buttonRenderClicked()
 {
     if(curr_vertices == nullptr || curr_polygons == nullptr)
@@ -97,39 +134,42 @@ void MainWindow::buttonRenderClicked()
     double scaleY = ui->spinBox_scaleY->value();
     log("scale Y: " + QString::number(scaleY));
 
-    matrix_gray matrix(width, height);
-    matrix.fill(255);
-
-    log("");
-
     QString renderType = ui->comboBox_renderType->currentText();
 
-    log("render type: " + renderType);
-    log("starting rendering...");
-
-    if (png_buffer == nullptr)
-    {
-        png_buffer = new std::vector<unsigned char>();
-    }
+    log("");
 
     double offsets[3] = { ui->spinBox_offset_x->value(), ui->spinBox_offset_y->value(), ui->spinBox_offset_z->value() };
     double angles[3] = { ui->spinBox_rotation_x->value(), ui->spinBox_rotation_y->value(), ui->spinBox_rotation_z->value() };
 
-    std::vector<vertex> transformed_vertices(curr_vertices->size());
-    transformVertices(transformed_vertices.data(), curr_vertices->data(), curr_vertices->size(), offsets, angles);
+    log("render type: " + renderType);
+    log("starting rendering...");
 
-    if (renderType == "polygons")
+    matrix* img_matrix;
+    ImageColorScheme colorScheme;
+
+    if (curr_bgColor[0] == curr_bgColor[1] && curr_bgColor[1] == curr_bgColor[2])
     {
-        draw_polygons_filled(&matrix, &transformed_vertices, curr_polygons, scaleX, scaleY);
-    }
-    else if (renderType == "vertices")
-    {
-        draw_vertices(&matrix, &transformed_vertices, (unsigned char)0, scaleX, scaleY);
+        colorScheme = ImageColorScheme::IMAGE_GRAY;
+        matrix_gray* img_gray = new matrix_gray(width, height);
+        img_gray->fill(curr_bgColor[0]);
+        img_matrix = img_gray;
     }
     else
     {
-        log("unsupported render type");
-        return;
+        colorScheme = ImageColorScheme::IMAGE_RGB;
+        matrix_rgb* img_rgb = new matrix_rgb(width, height);
+        img_rgb->fill(img_rgb->c_arr_to_element(curr_bgColor));
+        img_matrix = img_rgb;
+    }
+
+    switch (colorScheme)
+    {
+        case IMAGE_GRAY:
+            render_model((matrix_gray*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY);
+        case IMAGE_RGB:
+            render_model((matrix_rgb*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY);
+        default:
+            break;
     }
 
     log("finished rendering.");
@@ -137,7 +177,13 @@ void MainWindow::buttonRenderClicked()
 
     log("");
     log("encoding...");
-    codec->encode(png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
+
+    if (png_buffer == nullptr)
+    {
+        png_buffer = new std::vector<unsigned char>();
+    }
+
+    codec->encode(png_buffer, img_matrix, colorScheme, 8);
     log("encoded.");
     log("");
 

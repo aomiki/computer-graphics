@@ -27,18 +27,20 @@ public slots:
     void renderParamsChanged();
     void lockScale();
     void syncLockedScales();
+    void chooseBgColorClicked();
 
 private:
     image_codec* codec;
     QImage* curr_image = nullptr;
     std::string image_basename = "";
     std::vector<unsigned char>* png_buffer = nullptr;
+
     std::vector <vertex>* curr_vertices = nullptr;
     std::vector <polygon>* curr_polygons = nullptr;
+    unsigned char curr_bgColor[3] = {255, 255, 255};
 
     void log(const QString txt);
     Ui::MainWindow *ui;
-
 
 protected:
     void resizeEvent(QResizeEvent *event);

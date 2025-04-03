@@ -256,7 +256,10 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
         return;
     }
 
-    c_polyg_color[0] = (unsigned char)(-255.0 * viewing_angle_cosine + 0.5);
+    for (size_t i = 0; i < m->components_num; i++)
+    {
+        c_polyg_color[i] = (unsigned char)(-255.0 * viewing_angle_cosine + 0.5);
+    }
 
     matrix_coord img_center((unsigned)(m->width/2), (unsigned)(m->height/2));
  
