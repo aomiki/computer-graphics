@@ -94,32 +94,32 @@ __device__ double atomicMin_double(double* address, double val)
     return __longlong_as_double(old);
 }
 
-__global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max, unsigned char* polygon_color, vertex v1, vertex v2, vertex v3, double* zbuffer = nullptr)
+__global__ void kernel_drawPolygon(matrix* m, matrix_coord screen_min, matrix_coord screen_max, unsigned char* polygon_color, vertex screen_v1, vertex screen_v2, vertex screen_v3, double* zbuffer = nullptr)
 {
-    matrix_coord curr(
-        threadIdx.x + blockDim.x * blockIdx.x + min.x,
-        threadIdx.y + blockDim.y * blockIdx.y + min.y
+    matrix_coord i_curr(
+        threadIdx.x + blockDim.x * blockIdx.x + screen_min.x,
+        threadIdx.y + blockDim.y * blockIdx.y + screen_min.y
     );
 
-    if (curr.x >= max.x || curr.y >= max.y)
+    if (i_curr.x >= screen_max.x || i_curr.y >= screen_max.y)
         return;
 
-    vertex baryc = get_barycentric_coords(curr, v1, v2, v3);
+    vertex baryc = get_barycentric_coords(i_curr, screen_v1, screen_v2, screen_v3);
 
     if ((baryc.x >= 0) && (baryc.y >= 0) && (baryc.z >= 0))
     {
         //z-buffer check, if available
         if (zbuffer != nullptr)
         {
-            int interlaced_index = curr.y * m->width + curr.x;
-            double curr_z = (baryc.x * v1.z + baryc.y * v2.z + baryc.z * v3.z);
+            int interlaced_index = i_curr.y * m->width + i_curr.x;
+            double curr_z = (baryc.x * screen_v1.z + baryc.y * screen_v2.z + baryc.z * screen_v3.z);
             atomicMin_double(zbuffer + interlaced_index, curr_z);
 
             if (zbuffer[interlaced_index] == curr_z)
             {
                 for (unsigned i = 0; i < m->components_num; i++)
                 {
-                    m->get(curr.x, curr.y)[i] = polygon_color[i];
+                    m->get(i_curr.x, i_curr.y)[i] = polygon_color[i];
                 }
             }
         }
@@ -127,7 +127,7 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord min, matrix_coord max
         {
             for (unsigned i = 0; i < m->components_num; i++)
             {
-                m->get(curr.x, curr.y)[i] = polygon_color[i];
+                m->get(i_curr.x, i_curr.y)[i] = polygon_color[i];
             }
         }
     }
@@ -222,7 +222,7 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 /// @param offset how much to offset polygons
 /// @param curState used for random numbers generator
 /// @param seed used for random numbers generator
-__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, unsigned scale, unsigned offset, double* zbuffer, unsigned char* c_polyg_color_buffer)
+__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, double scaleX, double scaleY, double* zbuffer, unsigned char* c_polyg_color_buffer)
 {
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -258,32 +258,34 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 
     c_polyg_color[0] = (unsigned char)(-255.0 * viewing_angle_cosine + 0.5);
 
+    matrix_coord img_center((unsigned)(m->width/2), (unsigned)(m->height/2));
+ 
     //retrieve polygon's vertices and scale them
-    vertex v1{
-        scale * poly_v1->x + offset,
-        m->height - (scale * poly_v1->y + offset),
+    vertex screen_v1{
+        scaleX * poly_v1->x / poly_v1->z + img_center.x,
+        m->height - (scaleY * poly_v1->y / poly_v1->z + img_center.y),
         poly_v1->z
     };
-    vertex v2{
-        scale * poly_v2->x + offset,
-        m->height - (scale * poly_v2->y + offset),
+    vertex screen_v2{
+        scaleX * poly_v2->x / poly_v2->z + img_center.x,
+        m->height - (scaleY * poly_v2->y / poly_v2->z + img_center.y),
         poly_v2->z
     };
-    vertex v3{
-        scale * poly_v3->x + offset,
-        m->height - (scale * poly_v3->y + offset),
+    vertex screen_v3{
+        scaleX * poly_v3->x / poly_v3->z + img_center.x,
+        m->height - (scaleY * poly_v3->y/ poly_v3->z + img_center.y),
         poly_v3->z
     };
 
     //printf("%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u\n", i, poly_v1.x, poly_v1.y, poly_v1.z, poly_v2.x, poly_v2.y, poly_v2.z, poly_v3.x, poly_v3.y, poly_v3.z, viewing_angle_cosine, c_polyg_color[0]);
 
     //calculate rectangular boundary of the triangle
-    matrix_coord min(0,0);
-    matrix_coord max(0,0);
+    matrix_coord screen_min(0,0);
+    matrix_coord screen_max(0,0);
 
-    calc_triangle_boundaries(min, max, v1, v2, v3, *m);
+    calc_triangle_boundaries(screen_min, screen_max, screen_v1, screen_v2, screen_v3, *m);
 
-    if (max.x <= min.x || max.y <= min.y)
+    if (screen_max.x <= screen_min.x || screen_max.y <= screen_min.y)
     {
         return;
     }
@@ -291,8 +293,8 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     //DRAW TRIANGLE
 
     //cuda indices
-    unsigned poly_width = max.x - min.x;
-    unsigned poly_height = max.y - min.y;
+    unsigned poly_width = screen_max.x - screen_min.x;
+    unsigned poly_height = screen_max.y - screen_min.y;
 
     unsigned total_submatrix_size = poly_width * poly_height;
 
@@ -328,11 +330,11 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     cudaStream_t s;
     cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
 
-    kernel_drawPolygon<<<blocknum, blocksize, 0, s>>>(m, min, max, c_polyg_color, v1, v2, v3, zbuffer);
+    kernel_drawPolygon<<<blocknum, blocksize, 0, s>>>(m, screen_min, screen_max, c_polyg_color, screen_v1, screen_v2, screen_v3, zbuffer);
 };
 
 template <typename E>
-inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, int scale, int offset)
+inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY)
 {
     //CUDA-SPECIFIC
     //Итерируемся по полигонам. На каждой такой итерации - получаем нужные вершины и конвертируем в координаты экрана.
@@ -443,7 +445,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     //by default the limit on the number of simultaneous kernel launches is imposed 
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
 
-    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scale, offset, d_zbuffer, c_polyg_color_buffer);
+    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scaleX, scaleY, d_zbuffer, c_polyg_color_buffer);
     cuda_log(cudaDeviceSynchronize());
 
     transferMatrixDataToHost(img, d_m, false);

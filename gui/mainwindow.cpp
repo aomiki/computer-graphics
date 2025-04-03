@@ -18,20 +18,22 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->button_render, SIGNAL(clicked()), this, SLOT(buttonRenderClicked()));
     connect(ui->button_save, SIGNAL(clicked()), this, SLOT(buttonSaveClicked()));
 
+    connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+    connect(ui->spinBox_scaleY, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
 
-    connect(ui->textinp_scale, SIGNAL(valueChanged(int)), this, SLOT(scaleChanged()));
-    connect(ui->textinp_offset, SIGNAL(valueChanged(int)), this, SLOT(offsetChanged()));
+    connect(ui->spinBox_offset_x, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+    connect(ui->spinBox_offset_y, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+    connect(ui->spinBox_offset_z, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+
+    connect(ui->spinBox_rotation_x, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+    connect(ui->spinBox_rotation_y, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+    connect(ui->spinBox_rotation_z, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
+
+    connect(ui->textinp_width, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
+    connect(ui->textinp_height, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
 }
 
-void MainWindow::offsetChanged()
-{
-    if (ui->checkBox_interactiveRender->isChecked())
-    {
-        this->buttonRenderClicked();
-    }
-}
-
-void MainWindow::scaleChanged()
+void MainWindow::renderParamsChanged()
 {
     if (ui->checkBox_interactiveRender->isChecked())
     {
@@ -63,11 +65,11 @@ void MainWindow::buttonRenderClicked()
 
     log("dimensions: " + QString::number(width) + "x" + QString::number(height));
 
-    int scale = ui->textinp_scale->value();
-    log("scale: " + QString::number(scale));
+    double scaleX = ui->spinBox_scaleX->value();
+    log("scale X: " + QString::number(scaleX));
 
-    int offset = ui->textinp_offset->value();
-    log("offset: " + QString::number(offset));
+    double scaleY = ui->spinBox_scaleY->value();
+    log("scale Y: " + QString::number(scaleY));
 
     matrix_gray matrix(width, height);
     matrix.fill(255);
@@ -91,11 +93,11 @@ void MainWindow::buttonRenderClicked()
 
     if (renderType == "polygons")
     {
-        draw_polygons_filled(&matrix, curr_vertices, curr_polygons, scale, offset);
+        draw_polygons_filled(&matrix, curr_vertices, curr_polygons, scaleX, scaleY);
     }
     else if (renderType == "vertices")
     {
-        draw_vertices(&matrix, curr_vertices, (unsigned char)0, scale, offset);
+        draw_vertices(&matrix, curr_vertices, (unsigned char)0, scaleX, scaleY);
     }
     else
     {

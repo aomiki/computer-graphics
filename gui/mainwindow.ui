@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1809</width>
-    <height>1239</height>
+    <width>1813</width>
+    <height>1243</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -136,7 +136,7 @@ background-color: rgb(151, 174, 255);</string>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_scale">
+        <widget class="QLabel" name="label_scaleX">
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -158,44 +158,48 @@ background-color: rgb(151, 174, 255);</string>
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="textinp_scale">
-         <property name="styleSheet">
-          <string notr="true">color: rgb(56, 66, 255);</string>
-         </property>
-         <property name="maximum">
-          <number>999999</number>
-         </property>
-         <property name="value">
-          <number>200</number>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_scale">
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_scaleX">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>X </string>
+           </property>
+           <property name="minimum">
+            <double>-1000000.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>9999999.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="spinBox_scaleY">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="prefix">
+            <string>Y </string>
+           </property>
+           <property name="minimum">
+            <double>-99999999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>9999999.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QLabel" name="label_offset">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>11</height>
-          </size>
-         </property>
          <property name="styleSheet">
           <string notr="true">color: rgb(56, 66, 255);</string>
          </property>
          <property name="text">
           <string>Offset:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="textinp_offset">
-         <property name="styleSheet">
-          <string notr="true">color: rgb(56, 66, 255);</string>
-         </property>
-         <property name="maximum">
-          <number>99999999</number>
-         </property>
-         <property name="value">
-          <number>270</number>
          </property>
         </widget>
        </item>
@@ -523,7 +527,7 @@ background-color: rgb(151, 174, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>338</width>
-            <height>656</height>
+            <height>700</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -569,7 +573,7 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1809</width>
+     <width>1813</width>
      <height>27</height>
     </rect>
    </property>

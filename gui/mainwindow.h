@@ -24,8 +24,7 @@ public slots:
     void acceptFilenameClicked();
     void buttonRenderClicked();
     void buttonSaveClicked();
-    void scaleChanged();
-    void offsetChanged();
+    void renderParamsChanged();
 
 private:
     image_codec* codec;
