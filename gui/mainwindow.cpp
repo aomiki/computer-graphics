@@ -22,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->button_render, SIGNAL(clicked()), this, SLOT(buttonRenderClicked()));
     connect(ui->button_save, SIGNAL(clicked()), this, SLOT(buttonSaveClicked()));
     connect(ui->pushButton_bg_colorDialog, SIGNAL(clicked()), this, SLOT(chooseBgColorClicked()));
+    connect(ui->pushButton_model_colorDialog, SIGNAL(clicked()), this, SLOT(chooseModelColorClicked()));
 
     connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
     connect(ui->spinBox_scaleY, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
@@ -47,6 +48,19 @@ void MainWindow::chooseBgColorClicked()
     curr_bgColor[0] = chosenColor.red();
     curr_bgColor[1] = chosenColor.green();
     curr_bgColor[2] = chosenColor.blue();
+
+    renderParamsChanged();
+}
+
+void MainWindow::chooseModelColorClicked()
+{
+    QColorDialog colorPickerDialog;
+
+    QColor chosenColor = colorPickerDialog.getColor(QColor(curr_modelColor[0], curr_modelColor[1], curr_modelColor[2]));
+
+    curr_modelColor[0] = chosenColor.red();
+    curr_modelColor[1] = chosenColor.green();
+    curr_modelColor[2] = chosenColor.blue();
 
     renderParamsChanged();
 }
@@ -94,14 +108,14 @@ void MainWindow::updateImage()
 }
 
 template <typename T>
-void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double* offsets, double* angles, double scaleX, double scaleY)
+void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double* offsets, double* angles, double scaleX, double scaleY, unsigned char* modelColor)
 {
     std::vector<vertex> transformed_vertices(vertices->size());
     transformVertices(transformed_vertices.data(), vertices->data(), vertices->size(), offsets, angles);
 
     if (renderType == "polygons")
     {
-        draw_polygons_filled(matrix, &transformed_vertices, polygons, scaleX, scaleY);
+        draw_polygons_filled(matrix, &transformed_vertices, polygons, scaleX, scaleY, modelColor);
     }
     else if (renderType == "vertices")
     {
@@ -147,7 +161,9 @@ void MainWindow::buttonRenderClicked()
     matrix* img_matrix;
     ImageColorScheme colorScheme;
 
-    if (curr_bgColor[0] == curr_bgColor[1] && curr_bgColor[1] == curr_bgColor[2])
+    if ((curr_bgColor[0] == curr_bgColor[1] && curr_bgColor[1] == curr_bgColor[2]) &&
+        (curr_modelColor[0] == curr_modelColor[1] && curr_modelColor[1] == curr_modelColor[2])    
+    )
     {
         colorScheme = ImageColorScheme::IMAGE_GRAY;
         matrix_gray* img_gray = new matrix_gray(width, height);
@@ -165,9 +181,11 @@ void MainWindow::buttonRenderClicked()
     switch (colorScheme)
     {
         case IMAGE_GRAY:
-            render_model((matrix_gray*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY);
+            render_model((matrix_gray*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor);
+            break;
         case IMAGE_RGB:
-            render_model((matrix_rgb*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY);
+            render_model((matrix_rgb*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor);
+            break;
         default:
             break;
     }

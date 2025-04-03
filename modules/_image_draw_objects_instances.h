@@ -9,5 +9,5 @@ template void draw_vertices<color_rgb>(matrix_color<color_rgb>* m, std::vector<v
 template void draw_polygon<unsigned char>(matrix_color<unsigned char>* img, unsigned char polyg_color, vertex v1, vertex v2, vertex v3);
 template void draw_polygon<color_rgb>(matrix_color<color_rgb>* img, color_rgb polyg_color, vertex v1, vertex v2, vertex v3);
 
-template void draw_polygons_filled<unsigned char>(matrix_color<unsigned char> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY);
-template void draw_polygons_filled<color_rgb>(matrix_color<color_rgb> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY);
+template void draw_polygons_filled<unsigned char>(matrix_color<unsigned char> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY, unsigned char* modelColor);
+template void draw_polygons_filled<color_rgb>(matrix_color<color_rgb> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY, unsigned char* modelColor);

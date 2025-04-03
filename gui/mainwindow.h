@@ -28,6 +28,7 @@ public slots:
     void lockScale();
     void syncLockedScales();
     void chooseBgColorClicked();
+    void chooseModelColorClicked();
 
 private:
     image_codec* codec;
@@ -38,6 +39,7 @@ private:
     std::vector <vertex>* curr_vertices = nullptr;
     std::vector <polygon>* curr_polygons = nullptr;
     unsigned char curr_bgColor[3] = {255, 255, 255};
+    unsigned char curr_modelColor[3] = {255, 255, 255};
 
     void log(const QString txt);
     Ui::MainWindow *ui;

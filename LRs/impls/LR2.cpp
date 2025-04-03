@@ -95,7 +95,9 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     std::vector <polygon> polygons;
     readObj(in_path, &vertices, &polygons);
 
-    draw_polygons_filled(&matrix, &vertices, &polygons, scale, offset);
+    unsigned char modelColor[3] = { 255, 255, 255 };
+
+    draw_polygons_filled(&matrix, &vertices, &polygons, scale, offset, modelColor);
 
     codec->encode(png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
 }

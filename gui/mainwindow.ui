@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1819</width>
-    <height>1249</height>
+    <width>1821</width>
+    <height>1251</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -136,14 +136,28 @@ background-color: rgb(151, 174, 255);</string>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_bg_colorDialog">
-         <property name="styleSheet">
-          <string notr="true">color: rgb(56, 66, 255);</string>
-         </property>
-         <property name="text">
-          <string>Set BG color</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="pushButton_bg_colorDialog">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="text">
+            <string>Set BG color</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_model_colorDialog">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(56, 66, 255);</string>
+           </property>
+           <property name="text">
+            <string>Set model color</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QLabel" name="label_scaleX">
@@ -605,7 +619,7 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1819</width>
+     <width>1821</width>
      <height>27</height>
     </rect>
    </property>

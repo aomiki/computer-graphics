@@ -222,7 +222,7 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 /// @param offset how much to offset polygons
 /// @param curState used for random numbers generator
 /// @param seed used for random numbers generator
-__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, double scaleX, double scaleY, double* zbuffer, unsigned char* c_polyg_color_buffer)
+__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, double scaleX, double scaleY, double* zbuffer, unsigned char* c_polyg_color_buffer, unsigned char* modelColor)
 {
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -258,7 +258,7 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 
     for (size_t i = 0; i < m->components_num; i++)
     {
-        c_polyg_color[i] = (unsigned char)(-255.0 * viewing_angle_cosine + 0.5);
+        c_polyg_color[i] = (unsigned char)(-1 * modelColor[i] * viewing_angle_cosine + 0.5);
     }
 
     matrix_coord img_center((unsigned)(m->width/2), (unsigned)(m->height/2));
@@ -337,7 +337,7 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 };
 
 template <typename E>
-inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY)
+inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY, unsigned char* modelColor)
 {
     //CUDA-SPECIFIC
     //Итерируемся по полигонам. На каждой такой итерации - получаем нужные вершины и конвертируем в координаты экрана.
@@ -384,6 +384,9 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     unsigned char* c_polyg_color_buffer;
     const unsigned c_polyg_color_buffer_bytes = polygons->size() * img->components_num;
 
+    unsigned char* d_modelColor;
+    const unsigned d_modelColor_bytes = img->components_num * sizeof(unsigned char);
+
     char* d_membuf;
     cuda_log(cudaMalloc(
         &d_membuf,
@@ -392,7 +395,8 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
         d_polygons_bytes +
         d_m_bytes + 
         d_arr_interlaced_bytes + 
-        c_polyg_color_buffer_bytes
+        c_polyg_color_buffer_bytes +
+        d_modelColor_bytes
     ));
 
     unsigned mem_offset = 0;
@@ -415,10 +419,14 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     c_polyg_color_buffer = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += c_polyg_color_buffer_bytes;
 
+    d_modelColor = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_modelColor_bytes;
+
     transferMatrixToDevice(d_m, d_arr_interlaced, img);
 
     cuda_log(cudaMemcpy(d_vertices, vertices->data(), d_vertices_bytes, cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_polygons, polygons->data(), d_polygons_bytes, cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(d_modelColor, modelColor, d_modelColor_bytes, cudaMemcpyHostToDevice));
 
     unsigned zbuf_total_blocksize = 32;
     if (img->size() >= 4480)
@@ -448,7 +456,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     //by default the limit on the number of simultaneous kernel launches is imposed 
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
 
-    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scaleX, scaleY, d_zbuffer, c_polyg_color_buffer);
+    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scaleX, scaleY, d_zbuffer, c_polyg_color_buffer, d_modelColor);
     cuda_log(cudaDeviceSynchronize());
 
     transferMatrixDataToHost(img, d_m, false);
