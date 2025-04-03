@@ -169,6 +169,8 @@ void MainWindow::buttonRenderClicked()
         matrix_gray* img_gray = new matrix_gray(width, height);
         img_gray->fill(curr_bgColor[0]);
         img_matrix = img_gray;
+
+        ui->label_imgColorType->setText("Grayscale");
     }
     else
     {
@@ -176,6 +178,8 @@ void MainWindow::buttonRenderClicked()
         matrix_rgb* img_rgb = new matrix_rgb(width, height);
         img_rgb->fill(img_rgb->c_arr_to_element(curr_bgColor));
         img_matrix = img_rgb;
+
+        ui->label_imgColorType->setText("RGB");
     }
 
     switch (colorScheme)
@@ -189,6 +193,7 @@ void MainWindow::buttonRenderClicked()
         default:
             break;
     }
+
 
     log("finished rendering.");
     log("");

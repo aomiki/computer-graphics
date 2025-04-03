@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1821</width>
-    <height>1251</height>
+    <width>1827</width>
+    <height>1257</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -56,19 +56,6 @@
          </widget>
         </item>
         <item>
-         <widget class="Line" name="line">
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(85, 0, 255);</string>
-          </property>
-          <property name="lineWidth">
-           <number>1</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QLabel" name="label_polygonCountLabel">
           <property name="styleSheet">
            <string notr="true">color: rgb(56, 66, 255);</string>
@@ -100,6 +87,16 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_imgColorType">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(56, 66, 255);</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -573,7 +570,7 @@ background-color: rgb(151, 174, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>338</width>
-            <height>640</height>
+            <height>646</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -619,7 +616,7 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1821</width>
+     <width>1827</width>
      <height>27</height>
     </rect>
    </property>
