@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1813</width>
-    <height>1243</height>
+    <width>1817</width>
+    <height>1247</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -173,6 +173,12 @@ background-color: rgb(151, 174, 255);</string>
            <property name="maximum">
             <double>9999999.000000000000000</double>
            </property>
+           <property name="singleStep">
+            <double>10.000000000000000</double>
+           </property>
+           <property name="stepType">
+            <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+           </property>
           </widget>
          </item>
          <item>
@@ -189,9 +195,25 @@ background-color: rgb(151, 174, 255);</string>
            <property name="maximum">
             <double>9999999.000000000000000</double>
            </property>
+           <property name="singleStep">
+            <double>10.000000000000000</double>
+           </property>
+           <property name="stepType">
+            <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
+           </property>
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_lockScale">
+         <property name="styleSheet">
+          <string notr="true">color: rgb(56, 66, 255);</string>
+         </property>
+         <property name="text">
+          <string>Lock</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_offset">
@@ -527,7 +549,7 @@ background-color: rgb(151, 174, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>338</width>
-            <height>700</height>
+            <height>675</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -573,7 +595,7 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1813</width>
+     <width>1817</width>
      <height>27</height>
     </rect>
    </property>

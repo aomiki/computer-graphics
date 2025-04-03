@@ -25,6 +25,8 @@ public slots:
     void buttonRenderClicked();
     void buttonSaveClicked();
     void renderParamsChanged();
+    void lockScale();
+    void syncLockedScales();
 
 private:
     image_codec* codec;

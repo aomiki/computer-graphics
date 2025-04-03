@@ -28,9 +28,33 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->spinBox_rotation_x, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
     connect(ui->spinBox_rotation_y, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
     connect(ui->spinBox_rotation_z, SIGNAL(valueChanged(double)), this, SLOT(renderParamsChanged()));
-
+     
     connect(ui->textinp_width, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
     connect(ui->textinp_height, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
+
+    connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(syncLockedScales()));
+    connect(ui->checkBox_lockScale, SIGNAL(clicked(bool)), this, SLOT(lockScale()));
+}
+
+void MainWindow::syncLockedScales()
+{
+    if (ui->checkBox_lockScale->isChecked())
+    {
+        ui->spinBox_scaleY->setValue(ui->spinBox_scaleX->value());
+    }
+}
+
+void MainWindow::lockScale()
+{
+    if (ui->checkBox_lockScale->isChecked())
+    {
+        ui->spinBox_scaleY->setEnabled(false);
+        ui->spinBox_scaleY->setValue(ui->spinBox_scaleX->value());
+    }
+    else
+    {
+        ui->spinBox_scaleY->setEnabled(true);
+    }
 }
 
 void MainWindow::renderParamsChanged()
