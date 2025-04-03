@@ -11,4 +11,4 @@ __shared_func__ void poly_vertices_to_vectors(
     vertex& vec1, vertex& vec2);
 
 
-void transformVertices(vertex* vertices, unsigned n_vert, double* offsets, double* angles);
+void transformVertices(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3]);

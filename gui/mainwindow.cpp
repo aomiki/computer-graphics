@@ -89,15 +89,16 @@ void MainWindow::buttonRenderClicked()
     double offsets[3] = { ui->spinBox_offset_x->value(), ui->spinBox_offset_y->value(), ui->spinBox_offset_z->value() };
     double angles[3] = { ui->spinBox_rotation_x->value(), ui->spinBox_rotation_y->value(), ui->spinBox_rotation_z->value() };
 
-    transformVertices(curr_vertices->data(), curr_vertices->size(), offsets, angles);
+    std::vector<vertex> transformed_vertices(curr_vertices->size());
+    transformVertices(transformed_vertices.data(), curr_vertices->data(), curr_vertices->size(), offsets, angles);
 
     if (renderType == "polygons")
     {
-        draw_polygons_filled(&matrix, curr_vertices, curr_polygons, scaleX, scaleY);
+        draw_polygons_filled(&matrix, &transformed_vertices, curr_polygons, scaleX, scaleY);
     }
     else if (renderType == "vertices")
     {
-        draw_vertices(&matrix, curr_vertices, (unsigned char)0, scaleX, scaleY);
+        draw_vertices(&matrix, &transformed_vertices, (unsigned char)0, scaleX, scaleY);
     }
     else
     {

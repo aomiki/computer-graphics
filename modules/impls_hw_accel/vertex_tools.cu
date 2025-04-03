@@ -49,7 +49,7 @@ __global__ void doubleArrToVertices(vertex* vertices, double** result, unsigned 
     vertices[i].z = result[i][2];
 }
 
-void transformVertices(vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
+void transformVertices(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
 {
     if ((offsets[0] == 0) && (offsets[1] == 0) && (offsets[2] == 0) &&
         (angles[0] == 0) && (angles[1] == 0) && (angles[2] == 0))
@@ -190,7 +190,7 @@ void transformVertices(vertex* vertices, unsigned n_vert, double offsets[3], dou
     cudaDeviceSynchronize();
 
     //Get our result back to RAM
-    cuda_log(cudaMemcpy(vertices, d_vertices, n_vert * sizeof(vertex), cudaMemcpyDeviceToHost));
+    cuda_log(cudaMemcpy(vertices_transformed, d_vertices, n_vert * sizeof(vertex), cudaMemcpyDeviceToHost));
 
     //Free GPU memory
     cudaFree(d_rot_membuf);
