@@ -14,6 +14,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     codec = new image_codec();
 
+    connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(syncLockedScales()));
+    connect(ui->checkBox_lockScale, SIGNAL(clicked(bool)), this, SLOT(lockScale()));
+
     connect(ui->accept_filename, SIGNAL(clicked()), this, SLOT(acceptFilenameClicked()));
     connect(ui->button_render, SIGNAL(clicked()), this, SLOT(buttonRenderClicked()));
     connect(ui->button_save, SIGNAL(clicked()), this, SLOT(buttonSaveClicked()));
@@ -31,9 +34,6 @@ MainWindow::MainWindow(QWidget *parent)
      
     connect(ui->textinp_width, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
     connect(ui->textinp_height, SIGNAL(valueChanged(int)), this, SLOT(renderParamsChanged()));
-
-    connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(syncLockedScales()));
-    connect(ui->checkBox_lockScale, SIGNAL(clicked(bool)), this, SLOT(lockScale()));
 }
 
 void MainWindow::syncLockedScales()
@@ -59,6 +59,8 @@ void MainWindow::lockScale()
 
 void MainWindow::renderParamsChanged()
 {
+    syncLockedScales();
+
     if (ui->checkBox_interactiveRender->isChecked())
     {
         this->buttonRenderClicked();
