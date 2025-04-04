@@ -4,13 +4,14 @@
 #include "image_tools.h"
 #include "cublas_v2.h"
 #include <string>
+#include <nvjpeg.h>
 
-static cublasStatus_t LAST_CUBLAS_ERROR = CUBLAS_STATUS_SUCCESS;
-static cudaError_t LAST_CUDA_ERROR = cudaSuccess;
-static std::string LAST_CUDA_ERROR_DESC = "";
+#define cuda_log(result) cuda_log_detailed(result, __FILE__, __LINE__);
 
-void cuda_log(cublasStatus_t err);
-void cuda_log(cudaError_t err);
+__host__ __device__ void cuda_log_detailed(cudaError_t err, const char *file, int line);
+__host__ __device__ void cuda_log_detailed(cublasStatus_t err, const char *file, int line);
+__host__ __device__ void cuda_log_detailed(nvjpegStatus_t err, const char *file, int line);
+
 void transferMatrixToDevice(matrix* d_m, unsigned char* d_arr_interlaced, matrix* h_m);
 void transferMatrixDataToHost(matrix* h_m, matrix* d_m, bool do_free = true);
 

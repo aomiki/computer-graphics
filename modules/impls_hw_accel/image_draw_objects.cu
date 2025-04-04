@@ -331,9 +331,10 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     dim3 blocknum(blocknum_x, blocknum_y);
 
     cudaStream_t s;
-    cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
+    cuda_log(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking));
 
     kernel_drawPolygon<<<blocknum, blocksize, 0, s>>>(m, screen_min, screen_max, c_polyg_color, screen_v1, screen_v2, screen_v3, zbuffer);
+    cuda_log(cudaGetLastError());
 };
 
 template <typename E>
@@ -450,6 +451,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     }
 
     kernel_fill<<<(unsigned)(img->size()/zbuf_total_blocksize +1), zbuf_total_blocksize>>>(d_zbuffer, img->size(), std::numeric_limits<double>().max());
+    cuda_log(cudaGetLastError());
 
     unsigned blocknum = (unsigned)((polygons->size() / blocksize) + 1);
 
@@ -457,6 +459,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
 
     kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scaleX, scaleY, d_zbuffer, c_polyg_color_buffer, d_modelColor);
+    cuda_log(cudaGetLastError());
     cuda_log(cudaDeviceSynchronize());
 
     transferMatrixDataToHost(img, d_m, false);

@@ -58,8 +58,8 @@ void transformVertices(vertex* vertices_transformed, vertex* vertices, unsigned 
     }
 
     cublasHandle_t handle;
-    cublasCreate(&handle);
-    cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+    cuda_log(cublasCreate(&handle));
+    cuda_log(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
 
     //1. 2xGEMM: MULTIPLY ROTATION MATRICES
     double cosx = cos(angles[0]), sinx = sin(angles[0]);
@@ -181,20 +181,20 @@ void transformVertices(vertex* vertices_transformed, vertex* vertices, unsigned 
 
     //initialize all arrays for batched gemv
     initVerticesArr<<<(unsigned)(n_vert/poly_total_blocksize + 1), poly_total_blocksize>>>(d_vertices_raw_arr, d_offsets_arr, d_rot_xyz_arr, d_vertices, d_vertices_raw_arr_membuf, d_rot_xyz, d_offsets, n_vert);
-    cudaDeviceSynchronize();
+    cuda_log(cudaDeviceSynchronize());
 
     const double h_beta_gemv = 1;
 
     //Everything was for this moment
-    cublasDgemvBatched(handle, CUBLAS_OP_N, 3, 3, &h_alpha, d_rot_xyz_arr, 3, d_vertices_raw_arr, 1, &h_beta_gemv, d_offsets_arr, 1, n_vert);
-    cudaDeviceSynchronize();
+    cuda_log(cublasDgemvBatched(handle, CUBLAS_OP_N, 3, 3, &h_alpha, d_rot_xyz_arr, 3, d_vertices_raw_arr, 1, &h_beta_gemv, d_offsets_arr, 1, n_vert));
+    cuda_log(cudaDeviceSynchronize());
 
     //Get our result back to RAM
     cuda_log(cudaMemcpy(vertices_transformed, d_vertices, n_vert * sizeof(vertex), cudaMemcpyDeviceToHost));
 
     //Free GPU memory
-    cudaFree(d_rot_membuf);
-    cudaFree(d_gemv_arrays_membuf);
+    cuda_log(cudaFree(d_rot_membuf));
+    cuda_log(cudaFree(d_gemv_arrays_membuf));
 
-    cublasDestroy(handle);
+    cuda_log(cublasDestroy(handle));
 }

@@ -16,11 +16,6 @@ nvjpegStatus_t last_status = (nvjpegStatus_t)-1;
 cudaError_t last_error = (cudaError_t)-1;
 std::string last_error_desc = "";
 
-void cuda_log(nvjpegStatus_t status)
-{
-    last_status = status;
-}
-
 image_codec::image_codec()
 {
     //THREAD SAFE
