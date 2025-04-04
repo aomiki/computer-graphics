@@ -249,7 +249,7 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     double d = dot(n, camera_vec);
     double viewing_angle_cosine = d/(length(n)*length(camera_vec));
 
-    unsigned char* c_polyg_color = c_polyg_color_buffer + i*3;
+    unsigned char* c_polyg_color = c_polyg_color_buffer + i * m->components_num;
 
     if (viewing_angle_cosine >= 0)
     {
