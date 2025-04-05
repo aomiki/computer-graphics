@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1827</width>
-    <height>1257</height>
+    <width>1829</width>
+    <height>1259</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -72,6 +72,39 @@
           </property>
           <property name="text">
            <string>0</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(56, 66, 255);</string>
+          </property>
+          <property name="lineWidth">
+           <number>3</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_timer">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(56, 66, 255);</string>
+          </property>
+          <property name="text">
+           <string>0 ms</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_fps">
+          <property name="styleSheet">
+           <string notr="true">color: rgb(56, 66, 255);</string>
+          </property>
+          <property name="text">
+           <string>0 FPS</string>
           </property>
          </widget>
         </item>
@@ -570,7 +603,7 @@ background-color: rgb(151, 174, 255);</string>
             <x>0</x>
             <y>0</y>
             <width>338</width>
-            <height>646</height>
+            <height>648</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -616,7 +649,7 @@ background-color: rgb(151, 174, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1827</width>
+     <width>1829</width>
      <height>27</height>
     </rect>
    </property>

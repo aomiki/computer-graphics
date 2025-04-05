@@ -5,6 +5,7 @@
 #include <QScrollBar>
 #include <QColorDialog>
 #include <filesystem>
+#include <chrono>
 
 #if defined __has_include
 #  if __has_include (<nvtx3/nvToolsExt.h>)
@@ -138,6 +139,8 @@ void render_model(matrix_color<T>* matrix, QString renderType, std::vector<verte
 
 void MainWindow::buttonRenderClicked()
 {
+    std::chrono::steady_clock::time_point timer_start = std::chrono::steady_clock::now();
+
     #if defined __has_include
     #  if __has_include (<nvtx3/nvToolsExt.h>)
             nvtxRangeId_t nvtx_render_mark = nvtxRangeStartA("render_full_pipeline");
@@ -254,6 +257,12 @@ void MainWindow::buttonRenderClicked()
             nvtxRangeEnd(nvtx_render_mark);
     #  endif
     #endif
+
+    std::chrono::steady_clock::time_point timer_end = std::chrono::steady_clock::now();
+
+    int64_t timer_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(timer_end - timer_start).count();
+    ui->label_timer->setText(QString::number(timer_elapsed) + " ms");
+    ui->label_fps->setText(QString::number(1000 / timer_elapsed) + " FPS");
 }
 
 void MainWindow::acceptFilenameClicked()
