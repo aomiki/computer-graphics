@@ -2,7 +2,7 @@
 #include <cblas.h>
 #include <math.h>
 
-void transformVertices(vertex* vertices, unsigned n_vert, unsigned offsets[3], double angles[3])
+void transformVertices(vertex *vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
 {
     double cosx = cos(angles[0]), sinx = sin(angles[0]);
     double cosy = cos(angles[1]), siny = sin(angles[1]);
@@ -36,8 +36,8 @@ void transformVertices(vertex* vertices, unsigned n_vert, unsigned offsets[3], d
     for (unsigned i = 0; i < n_vert; i++)
     {
         cblas_dgemv(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, rot_xyz, 3, vertices[i].array, 1, 0.0, result, 1);
-        vertices[i].x = result[0] + offsets[0];
-        vertices[i].y = result[1] + offsets[1];
-        vertices[i].z = result[2] + offsets[2];
+        vertices_transformed[i].x = result[0] + offsets[0];
+        vertices_transformed[i].y = result[1] + offsets[1];
+        vertices_transformed[i].z = result[2] + offsets[2];
     }
 } 

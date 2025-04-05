@@ -65,7 +65,7 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 }
 
 template <typename E>
-void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double scaleX, double scaleY)
+void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double scaleX, double scaleY, unsigned char* modelColor)
 {
     std::vector<double> zbuffer(img->width * img->height, std::numeric_limits<double>::max());
     for (size_t i = 0; i < polygons->size(); i++)

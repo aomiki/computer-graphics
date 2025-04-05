@@ -88,7 +88,7 @@ void lr2_task9_multiple_triags_big(std::string out_path, image_codec *codec)
     codec->save_image_file(&img_buff, out_path);
 }
 
-void lr2_task10_model(std::string in_path, std::string out_path, std::vector<unsigned char>* png_buffer,  unsigned width, unsigned height, int scale, int offset, image_codec *codec)
+void lr2_task10_model(std::string in_path, std::string out_path, std::vector<unsigned char>* png_buffer,  unsigned width, unsigned height, image_codec *codec)
 {
     matrix_gray matrix(width, height);
     matrix.fill(255);
@@ -97,12 +97,12 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     vertex v;
     readObj(in_path, &vertices, &polygons);
     
-    unsigned int offsets[3] = {0, 0, 200};
+    double offsets[3] = {0, 0, 5};
     double angles[3] = {0, 3, 0}; 
-    double scaleX = 4000;
-    double scaleY = 4000;
+    double scaleX = 200;
+    double scaleY = 200;
     
-    transformVertices(vertices.data(), vertices.size(), offsets, angles);
+    transformVertices(vertices.data(), vertices.data(), vertices.size(), offsets, angles);
 
     unsigned char modelColor[3] = { 255, 255, 255 };
 
