@@ -100,13 +100,14 @@ int main(int argc, char *argv[])
     lr2_task10_model(input_folder / "nvLogo.obj", lr2_result_folder / "nvLogo", &png_buffer, 500, 500, 20, 270, &codec);
     #endif
     std::vector<unsigned char> png_buffer;
-    lr2_task10_model(input_folder / "elaina.obj", lr2_result_folder / "elaina", &png_buffer, 3000, 3000, 1, 500, &codec);
+    lr2_task10_model(input_folder / "Paimon.obj", lr2_result_folder / "Paimon", &png_buffer, 1000, 1000, &codec);
     #endif
 
-    codec.save_image_file(&png_buffer, lr2_result_folder / "elaina");
+    codec.save_image_file(&png_buffer, lr2_result_folder / "Paimon");
 
     codec.~image_codec();
     std::cout << "that's it" << std::endl;
+    
 }
 
 template<typename E>

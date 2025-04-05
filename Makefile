@@ -47,7 +47,7 @@ LDFLAGS_CUDA := -I/opt/cuda/include/ -L/opt/cuda/lib
 LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos -lcudart -lcudadevrt -lcublas
 
 #General arguments
-LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/
+LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/ -I/usr/include/openblas -fopenmp -lopenblas
 CXXFLAGS := -std=c++17 $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) -pthread Program.o -g
 
 #Compile with LodePNG implementation (link object files)
@@ -69,7 +69,7 @@ modules/impls_shared/%.cu.o: modules/impls_shared/%.cpp
 	nvcc $(LDFLAGS) -arch=native -rdc=true $(NV_OPTIMIZATION_FLAGS) -o $@ -c $^
 
 gui/moc_mainwindow.cpp: gui/mainwindow.h gui/ui_mainwindow.h
-	$(QT_DIR)/moc $(LDFLAGS) $< -o $@
+	$(QT_DIR)/moc -I modules/ -I include/lodepng/ -I LRs/ -I/usr/include/openblas $< -o $@
 
 gui/ui_mainwindow.h: gui/mainwindow.ui
 	$(QT_DIR)/uic gui/mainwindow.ui -o gui/ui_mainwindow.h 
