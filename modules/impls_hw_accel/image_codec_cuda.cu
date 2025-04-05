@@ -2,6 +2,7 @@
 #include "nvjpeg.h"
 #include "utils.cuh"
 #include <fstream>
+#include <nvtx3/nvToolsExt.h>
 
 cudaStream_t stream;
 nvjpegHandle_t nv_handle;
@@ -71,6 +72,8 @@ ImageInfo image_codec::read_info(std::vector<unsigned char>* img_buffer)
 
 void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)
 {
+    nvtxRangeId_t nvtx_render_encode_mark = nvtxRangeStartA("render_encode");
+
     // code taken from example: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
 
     nvjpegImage_t nv_image;
@@ -122,6 +125,8 @@ void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_mat
 
     //clean up
     cuda_log(cudaFree(nv_image.channel[0]));
+
+    nvtxRangeEnd(nvtx_render_encode_mark);
 }
 
 void image_codec::decode(std::vector<unsigned char>* img_source, matrix* img_matrix, ImageColorScheme colorScheme, unsigned bit_depth)

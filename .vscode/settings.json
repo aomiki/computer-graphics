@@ -91,6 +91,7 @@
         "*.moc": "cpp",
         "qmainwindow": "cpp",
         "qscrollbar": "cpp",
-        "cfenv": "cpp"
+        "cfenv": "cpp",
+        "__config": "cpp"
     }
 }

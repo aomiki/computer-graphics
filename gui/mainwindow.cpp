@@ -7,6 +7,12 @@
 #include <QColorDialog>
 #include <filesystem>
 
+#if defined __has_include
+#  if __has_include (<nvtx3/nvToolsExt.h>)
+#    include <nvtx3/nvToolsExt.h>
+#  endif
+#endif
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -131,6 +137,12 @@ void render_model(matrix_color<T>* matrix, QString renderType, std::vector<verte
 
 void MainWindow::buttonRenderClicked()
 {
+    #if defined __has_include
+    #  if __has_include (<nvtx3/nvToolsExt.h>)
+            nvtxRangeId_t nvtx_render_mark = nvtxRangeStartA("render_full_pipeline");
+    #  endif
+    #endif
+
     if(curr_vertices == nullptr || curr_polygons == nullptr)
     {
         log("data is not loaded!");
@@ -160,6 +172,7 @@ void MainWindow::buttonRenderClicked()
 
     matrix* img_matrix;
     ImageColorScheme colorScheme;
+
 
     if ((curr_bgColor[0] == curr_bgColor[1] && curr_bgColor[1] == curr_bgColor[2]) &&
         (curr_modelColor[0] == curr_modelColor[1] && curr_modelColor[1] == curr_modelColor[2])    
@@ -194,7 +207,6 @@ void MainWindow::buttonRenderClicked()
             break;
     }
 
-
     log("finished rendering.");
     log("");
 
@@ -206,7 +218,10 @@ void MainWindow::buttonRenderClicked()
         png_buffer = new std::vector<unsigned char>();
     }
 
+
     codec->encode(png_buffer, img_matrix, colorScheme, 8);
+
+
     log("encoded.");
     log("");
 
@@ -232,6 +247,12 @@ void MainWindow::buttonRenderClicked()
 
     ui->label_vertexCount->setNum((double)curr_vertices->size());
     ui->label_polygonCount->setNum((double)curr_polygons->size());
+
+    #if defined __has_include
+    #  if __has_include (<nvtx3/nvToolsExt.h>)
+            nvtxRangeEnd(nvtx_render_mark);
+    #  endif
+    #endif
 }
 
 void MainWindow::acceptFilenameClicked()

@@ -1,4 +1,5 @@
 #include <cuda/std/limits>
+#include <nvtx3/nvToolsExt.h>
 
 #include "vertex_tools.h"
 #include "image_draw_objects.h"
@@ -340,6 +341,8 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 template <typename E>
 inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY, unsigned char* modelColor)
 {
+    nvtxRangeId_t nvtx_render_mark = nvtxRangeStartA("render_draw");
+
     //CUDA-SPECIFIC
     //Итерируемся по полигонам. На каждой такой итерации - получаем нужные вершины и конвертируем в координаты экрана.
     //Затем создаем квадрат в пределах этих вершин и итерируемся по каждому пикселю в квадрате, закрашивая либо не закрашивая по пути
@@ -367,6 +370,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     }
 */
 
+    nvtxRangeId_t nvtx_render_memory_to_mark = nvtxRangeStartA("render_draw_memory_to_gpu");
     double* d_zbuffer;
     const unsigned d_zbuffer_bytes = img->size() * sizeof(double);
 
@@ -429,6 +433,8 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     cuda_log(cudaMemcpy(d_polygons, polygons->data(), d_polygons_bytes, cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_modelColor, modelColor, d_modelColor_bytes, cudaMemcpyHostToDevice));
 
+    nvtxRangeEnd(nvtx_render_memory_to_mark);
+
     unsigned zbuf_total_blocksize = 32;
     if (img->size() >= 4480)
     {
@@ -459,12 +465,17 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
     cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polygons->size()));
 
     kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_vertices, d_polygons, vertices->size(), polygons->size(), scaleX, scaleY, d_zbuffer, c_polyg_color_buffer, d_modelColor);
+
     cuda_log(cudaGetLastError());
     cuda_log(cudaDeviceSynchronize());
 
+    nvtxRangeId_t nvtx_render_memory_from_mark = nvtxRangeStartA("render_draw_memory_from_gpu");
     transferMatrixDataToHost(img, d_m, false);
 
-    cudaFree(d_membuf);
+    cuda_log(cudaFree(d_membuf));
+    nvtxRangeEnd(nvtx_render_memory_from_mark);
+
+    nvtxRangeEnd(nvtx_render_mark);
 }
 
 #include "_image_draw_objects_instances.h"

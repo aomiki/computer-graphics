@@ -4,12 +4,12 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/modules/hw_accel",
                 "${workspaceFolder}/modules/",
                 "${workspaceFolder}/include/lodepng",
                 "/usr/include/qt6",
                 "/usr/include/qt/QtWidgets",
-                "/usr/include/qt6"
+                "/usr/include/qt6",
+                "/opt/cuda/targets/x86_64-linux/include"
             ],
             "defines": [
                 "CUDA_IMPL",
