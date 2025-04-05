@@ -5,6 +5,7 @@
 #define sqrt sqrtf
 #else
 #include <cmath>
+#include "vertex_tools.h"
 #endif
 
 __shared_func__ vertex get_barycentric_coords(matrix_coord &m_coords, vertex &v1, vertex &v2, vertex &v3)

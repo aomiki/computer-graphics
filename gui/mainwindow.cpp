@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "LR2.h"
-#include "vertex_tools.h"
 #include <image_draw_objects.h>
 #include <QScrollBar>
 #include <QColorDialog>
@@ -20,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     codec = new image_codec();
+    vt_transform = new vertex_transforms();
 
     connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(syncLockedScales()));
     connect(ui->checkBox_lockScale, SIGNAL(clicked(bool)), this, SLOT(lockScale()));
@@ -114,10 +114,11 @@ void MainWindow::updateImage()
 }
 
 template <typename T>
-void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double* offsets, double* angles, double scaleX, double scaleY, unsigned char* modelColor)
+void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double* offsets, double* angles, double scaleX, double scaleY, unsigned char* modelColor, vertex_transforms* vt_transforms)
 {
     std::vector<vertex> transformed_vertices(vertices->size());
-    transformVertices(transformed_vertices.data(), vertices->data(), vertices->size(), offsets, angles);
+
+    vt_transforms->rotateAndOffset(transformed_vertices.data(), vertices->data(), vertices->size(), offsets, angles);
 
     if (renderType == "polygons")
     {
@@ -198,10 +199,10 @@ void MainWindow::buttonRenderClicked()
     switch (colorScheme)
     {
         case IMAGE_GRAY:
-            render_model((matrix_gray*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor);
+            render_model((matrix_gray*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor, vt_transform);
             break;
         case IMAGE_RGB:
-            render_model((matrix_rgb*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor);
+            render_model((matrix_rgb*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor, vt_transform);
             break;
         default:
             break;
@@ -322,4 +323,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete codec;
+    delete vt_transform;
 }

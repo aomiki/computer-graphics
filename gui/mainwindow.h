@@ -3,7 +3,8 @@
 
 #include <QMainWindow>
 #include "image_codec.h"
-#include <obj_parser.h>
+#include "vertex_tools.h"
+#include "obj_parser.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,6 +33,8 @@ public slots:
 
 private:
     image_codec* codec;
+    vertex_transforms* vt_transform;
+
     QImage* curr_image = nullptr;
     std::string image_basename = "";
     std::vector<unsigned char>* png_buffer = nullptr;

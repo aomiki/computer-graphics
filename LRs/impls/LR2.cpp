@@ -1,7 +1,6 @@
 #include <cmath> 
 #include "LR2.h"
 #include "image_draw_objects.h"
-#include "vertex_tools.h"
 
 void lr2_task9_single_triag(std::string out_path, image_codec *codec)
 {
@@ -88,7 +87,7 @@ void lr2_task9_multiple_triags_big(std::string out_path, image_codec *codec)
     codec->save_image_file(&img_buff, out_path);
 }
 
-void lr2_task10_model(std::string in_path, std::string out_path, std::vector<unsigned char>* png_buffer,  unsigned width, unsigned height, image_codec *codec)
+void lr2_task10_model(std::string in_path, std::string out_path, std::vector<unsigned char>* png_buffer,  unsigned width, unsigned height, image_codec *codec, vertex_transforms* vt_transforms)
 {
     matrix_gray matrix(width, height);
     matrix.fill(255);
@@ -102,7 +101,7 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     double scaleX = 200;
     double scaleY = 200;
     
-    transformVertices(vertices.data(), vertices.data(), vertices.size(), offsets, angles);
+    vt_transforms->rotateAndOffset(vertices.data(), vertices.data(), vertices.size(), offsets, angles);
 
     unsigned char modelColor[3] = { 255, 255, 255 };
 

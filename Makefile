@@ -47,8 +47,8 @@ LDFLAGS_CUDA := -I/opt/cuda/include/ -L/opt/cuda/lib
 LDLIBS_CUDA := -lcuda -lcudart -lnvjpeg_static -lculibos -lcudart -lcudadevrt -lcublas
 
 #General arguments
-LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/ -I/usr/include/openblas -fopenmp -lopenblas
-CXXFLAGS := -std=c++17 $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) -pthread Program.o -g
+LDFLAGS := -I modules/ -I include/lodepng/ -I LRs/ -I/usr/include/openblas
+CXXFLAGS := -std=c++17 $(LDFLAGS) $(LDFLAGS_GUI) $(MODULES) $(LRS) $(GUI) -fopenmp -pthread -lopenblas Program.o -g
 
 #Compile with LodePNG implementation (link object files)
 graphics-lode.out: HW_ACCEL = LODE_IMPL

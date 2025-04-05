@@ -1,4 +1,5 @@
 #include "image_codec.h"
+#include "vertex_tools.h"
 
 #include <string>
 
@@ -10,4 +11,4 @@ void lr2_task9_single_triag_fulloutofbound(std::string out_path, image_codec *co
 
 void lr2_task9_multiple_triags_big(std::string out_path, image_codec *codec);
 
-void lr2_task10_model(std::string in_path, std::string out_path, std::vector<unsigned char>* png_buffer, unsigned width, unsigned height, image_codec *codec);
+void lr2_task10_model(std::string in_path, std::string out_path, std::vector<unsigned char>* png_buffer, unsigned width, unsigned height, image_codec *codec, vertex_transforms* vt_transforms);

@@ -2,7 +2,16 @@
 #include <cblas.h>
 #include <math.h>
 
-void transformVertices(vertex *vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
+
+vertex_transforms::vertex_transforms()
+{
+}
+
+vertex_transforms::~vertex_transforms()
+{
+}
+
+void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
 {
     double cosx = cos(angles[0]), sinx = sin(angles[0]);
     double cosy = cos(angles[1]), siny = sin(angles[1]);

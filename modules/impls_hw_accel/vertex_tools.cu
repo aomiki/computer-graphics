@@ -49,17 +49,26 @@ __global__ void doubleArrToVertices(vertex* vertices, double** result, unsigned 
     vertices[i].z = result[i][2];
 }
 
-void transformVertices(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
+cublasHandle_t handle;
+
+vertex_transforms::vertex_transforms()
+{
+    cuda_log(cublasCreate(&handle));
+    cuda_log(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+}
+
+vertex_transforms::~vertex_transforms()
+{
+    cuda_log(cublasDestroy(handle));
+}
+
+void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
 {
     if ((offsets[0] == 0) && (offsets[1] == 0) && (offsets[2] == 0) &&
         (angles[0] == 0) && (angles[1] == 0) && (angles[2] == 0))
     {
         return;
     }
-
-    cublasHandle_t handle;
-    cuda_log(cublasCreate(&handle));
-    cuda_log(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
 
     //1. 2xGEMM: MULTIPLY ROTATION MATRICES
     double cosx = cos(angles[0]), sinx = sin(angles[0]);
@@ -195,6 +204,4 @@ void transformVertices(vertex* vertices_transformed, vertex* vertices, unsigned 
     //Free GPU memory
     cuda_log(cudaFree(d_rot_membuf));
     cuda_log(cudaFree(d_gemv_arrays_membuf));
-
-    cuda_log(cublasDestroy(handle));
 }
