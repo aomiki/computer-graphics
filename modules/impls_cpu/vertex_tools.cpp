@@ -40,4 +40,4 @@ void transformVertices(vertex* vertices, unsigned n_vert, unsigned offsets[3], d
         vertices[i].y = result[1] + offsets[1];
         vertices[i].z = result[2] + offsets[2];
     }
-}
+} 

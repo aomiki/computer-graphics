@@ -65,7 +65,7 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 }
 
 template <typename E>
-void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, int scale, int offset)
+void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double scaleX, double scaleY)
 {
     std::vector<double> zbuffer(img->width * img->height, std::numeric_limits<double>::max());
     for (size_t i = 0; i < polygons->size(); i++)
@@ -107,19 +107,21 @@ void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, s
         matrix_coord min(0,0);
         matrix_coord max(0,0);
 
+        double u0 = img->width / 2.0; 
+        double v0 = img->height / 2.0;
         vertex v1{
-        scale * poly_v1.x + offset,
-        img->height - (scale * poly_v1.y + offset),
+        (scaleX * poly_v1.x) / poly_v1.z + u0,
+        img->height - ((scaleY * poly_v1.y ) / poly_v1.z + v0),
         poly_v1.z
                 };
         vertex v2{
-        scale * poly_v2.x + offset,
-        img->height - (scale * poly_v2.y + offset),
+        (scaleX * poly_v2.x) / poly_v2.z + u0,
+        img->height - ((scaleY * poly_v2.y) / poly_v2.z + v0),
         poly_v2.z
                 };
         vertex v3{
-        scale * poly_v3.x + offset,
-        img->height - (scale * poly_v3.y + offset),
+        (scaleX * poly_v3.x) / poly_v3.z + u0,
+        img->height - ((scaleY * poly_v3.y) / poly_v3.z + v0),
         poly_v3.z
                 };
 

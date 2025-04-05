@@ -97,12 +97,15 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     vertex v;
     readObj(in_path, &vertices, &polygons);
     
-    unsigned int offsets[3] = {1000, 1000, 0};
-    double angles[3] = {0, 0, 1.57}; 
-    transformVertices(vertices.data(), vertices.size() , offsets, angles);
+    unsigned int offsets[3] = {0, 0, 200};
+    double angles[3] = {0, 3, 0}; 
+    double scaleX = 4000;
+    double scaleY = 4000;
+    
+    transformVertices(vertices.data(), vertices.size(), offsets, angles);
 
     unsigned char modelColor[3] = { 255, 255, 255 };
 
-    draw_polygons_filled(&matrix, &vertices, &polygons, scale, offset, modelColor);
+    draw_polygons_filled(&matrix, &vertices, &polygons, scaleX, scaleY, modelColor);
     codec->encode(png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
 }
