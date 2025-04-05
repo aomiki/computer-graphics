@@ -11,11 +11,6 @@ nvjpegJpegState_t nvjpeg_decoder_state;
 nvjpegEncoderState_t nv_enc_state;
 nvjpegEncoderParams_t nv_enc_params;
 
-/// @brief for debug
-nvjpegStatus_t last_status = (nvjpegStatus_t)-1;
-cudaError_t last_error = (cudaError_t)-1;
-std::string last_error_desc = "";
-
 image_codec::image_codec()
 {
     //THREAD SAFE
@@ -32,8 +27,8 @@ image_codec::image_codec()
     // set the highest quality
     cuda_log(nvjpegEncoderParamsSetQuality(nv_enc_params, 100, stream));
 
-    //use the best type of JPEG encoding
-    cuda_log(nvjpegEncoderParamsSetEncoding(nv_enc_params, nvjpegJpegEncoding_t::NVJPEG_ENCODING_LOSSLESS_HUFFMAN, stream));
+    //set the type of encoder - progressive for faster data transfer
+    cuda_log(nvjpegEncoderParamsSetEncoding(nv_enc_params, nvjpegJpegEncoding_t::NVJPEG_ENCODING_PROGRESSIVE_DCT_HUFFMAN, stream));
 
     //nvjpeg decoding
     cuda_log(nvjpegJpegStateCreate(nv_handle, &nvjpeg_decoder_state));
