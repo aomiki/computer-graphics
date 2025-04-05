@@ -6,8 +6,8 @@
 
 
 __shared_func__ vertex get_barycentric_coords(matrix_coord& m_coords, vertex& v1, vertex& v2, vertex& v3);
-__shared_func__ double length(vertex& vec);
-__shared_func__ double dot(vertex& vec1, vertex& vec2);
+__shared_func__ float length(vertex& vec);
+__shared_func__ float dot(vertex& vec1, vertex& vec2);
 __shared_func__ vertex normal(vertex& vec1, vertex& vec2);
 
 __shared_func__ void poly_vertices_to_vectors(
@@ -21,7 +21,7 @@ class vertex_transforms
         vertex_transforms();
         ~vertex_transforms();
 
-        void rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3]);
+        void rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, float offsets[3], float angles[3]);
 };
 
 #endif

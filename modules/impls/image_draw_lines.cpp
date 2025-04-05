@@ -11,7 +11,7 @@ void draw_star(matrix_rgb* matrix, matrix_coord from, color_rgb line_color, void
 {
     for (size_t i = 0; i < 13; i++)
     {
-        double alpha = 2*M_PI* i/ 13;
+        float alpha = 2*M_PI* i/ 13;
 
         matrix_coord to(100+95*cos(alpha), 100+95*sin(alpha));
     
@@ -21,9 +21,9 @@ void draw_star(matrix_rgb* matrix, matrix_coord from, color_rgb line_color, void
 
 void draw_line_interpolation_count(matrix_rgb* matrix, matrix_coord from, matrix_coord to, int count, color_rgb line_color)
 {
-    double step = 1.0 / count;
+    float step = 1.0 / count;
     
-    for (double i = 0; i < 1; i += step)
+    for (float i = 0; i < 1; i += step)
     {
         unsigned x = round((1.0 - i)*from.x + i*to.x);
         unsigned y = round((1.0 - i)*from.y + i*to.y);
@@ -33,10 +33,10 @@ void draw_line_interpolation_count(matrix_rgb* matrix, matrix_coord from, matrix
 
 void draw_line_interpolation(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color)
 {
-    double count = sqrt(square(from.x-to.x) + square(from.y-to.y));
-    double step = 1.0 / count;
+    float count = sqrt(square(from.x-to.x) + square(from.y-to.y));
+    float step = 1.0 / count;
 
-    for (double i = 0; i < 1; i += step)
+    for (float i = 0; i < 1; i += step)
     {
         unsigned x = round((1.0 - i)*from.x + i*to.x);
         unsigned y = round((1.0 - i)*from.y + i*to.y);
@@ -46,9 +46,9 @@ void draw_line_interpolation(matrix_rgb *matrix, matrix_coord from, matrix_coord
 
 void draw_line_interpolation_xloop(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_rgb line_color)
 {
-    for (double x = from.x; x < to.x; x++)
+    for (float x = from.x; x < to.x; x++)
     {
-        double t = (x-from.x)/(to.x - from.x);
+        float t = (x-from.x)/(to.x - from.x);
 
         unsigned y = round((1.0 - t)*from.y + t*to.y);
         matrix->set(x,y, line_color);
@@ -62,9 +62,9 @@ void draw_line_interpolation_xloop_fixX(matrix_rgb *matrix, matrix_coord from, m
         std::swap(from, to);
     }
     
-    for (double x = from.x; x < to.x; x++)
+    for (float x = from.x; x < to.x; x++)
     {
-        double t = (x-from.x)/(to.x - from.x);
+        float t = (x-from.x)/(to.x - from.x);
 
         unsigned y = round((1.0 - t)*from.y + t*to.y);
         matrix->set(x,y, line_color);
@@ -88,9 +88,9 @@ void draw_line_interpolation_xloop_fixXfixY(matrix_rgb *matrix, matrix_coord fro
         std::swap(from, to);
     }
 
-    for (double x = from.x; x < to.x; x++)
+    for (float x = from.x; x < to.x; x++)
     {
-        double t = (x-from.x)/(to.x - from.x);
+        float t = (x-from.x)/(to.x - from.x);
 
         unsigned y = round((1.0 - t)*from.y + t*to.y);
 
@@ -122,10 +122,10 @@ void draw_line_dy(matrix_rgb *matrix, matrix_coord from, matrix_coord to, color_
         std::swap(from, to);
     }
 
-    double dy = ((double)abs(to.y - from.y))/(to.x - from.x);
+    float dy = ((float)abs(to.y - from.y))/(to.x - from.x);
     unsigned y = from.y;
     
-    double derror = 0.0;
+    float derror = 0.0;
 
     char y_upd = to.y > from.y? 1 : -1;
 
@@ -167,10 +167,10 @@ void draw_line_dy_rev1(matrix_rgb *matrix, matrix_coord from, matrix_coord to, c
         std::swap(from, to);
     }
 
-    double dy = 2.0*(to.x - from.x)*((double)abs(to.y - from.y))/(to.x - from.x);
+    float dy = 2.0*(to.x - from.x)*((float)abs(to.y - from.y))/(to.x - from.x);
     unsigned y = from.y;
     
-    double derror = 0.0;
+    float derror = 0.0;
 
     char y_upd = to.y > from.y? 1 : -1;
 

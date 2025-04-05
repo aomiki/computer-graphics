@@ -115,7 +115,7 @@ void MainWindow::updateImage()
 }
 
 template <typename T>
-void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double* offsets, double* angles, double scaleX, double scaleY, unsigned char* modelColor, vertex_transforms* vt_transforms)
+void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor, vertex_transforms* vt_transforms)
 {
     std::vector<vertex> transformed_vertices(vertices->size());
 
@@ -158,18 +158,18 @@ void MainWindow::buttonRenderClicked()
 
     log("dimensions: " + QString::number(width) + "x" + QString::number(height));
 
-    double scaleX = ui->spinBox_scaleX->value();
+    float scaleX = ui->spinBox_scaleX->value();
     log("scale X: " + QString::number(scaleX));
 
-    double scaleY = ui->spinBox_scaleY->value();
+    float scaleY = ui->spinBox_scaleY->value();
     log("scale Y: " + QString::number(scaleY));
 
     QString renderType = ui->comboBox_renderType->currentText();
 
     log("");
 
-    double offsets[3] = { ui->spinBox_offset_x->value(), ui->spinBox_offset_y->value(), ui->spinBox_offset_z->value() };
-    double angles[3] = { ui->spinBox_rotation_x->value(), ui->spinBox_rotation_y->value(), ui->spinBox_rotation_z->value() };
+    float offsets[3] = { ui->spinBox_offset_x->value(), ui->spinBox_offset_y->value(), ui->spinBox_offset_z->value() };
+    float angles[3] = { ui->spinBox_rotation_x->value(), ui->spinBox_rotation_y->value(), ui->spinBox_rotation_z->value() };
 
     log("render type: " + renderType);
     log("starting rendering...");
@@ -249,8 +249,8 @@ void MainWindow::buttonRenderClicked()
 
     updateImage();
 
-    ui->label_vertexCount->setNum((double)curr_vertices->size());
-    ui->label_polygonCount->setNum((double)curr_polygons->size());
+    ui->label_vertexCount->setNum((float)curr_vertices->size());
+    ui->label_polygonCount->setNum((float)curr_polygons->size());
 
     #if defined __has_include
     #  if __has_include (<nvtx3/nvToolsExt.h>)

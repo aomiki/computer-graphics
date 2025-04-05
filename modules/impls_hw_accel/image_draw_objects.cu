@@ -84,18 +84,15 @@ void draw_vertices(matrix_color<E>* m, std::vector<vertex>* vertices, E vertex_c
     delete h_vals;
 };
 
-__device__ double atomicMin_double(double* address, double val)
-{
-    unsigned long long int* address_as_ull = (unsigned long long int*) address;
-    unsigned long long int old = *address_as_ull, assumed;
-    do {
-        assumed = old;
-        old = atomicCAS(address_as_ull, assumed, __double_as_longlong(fmin(val, __longlong_as_double(assumed))));
-    } while (assumed != old);
-    return __longlong_as_double(old);
+__device__ __forceinline__ float atomicMinFloat(float* addr, float value) {
+    float old;
+    old = !signbit(value) ? __int_as_float(atomicMin((int*)addr, __float_as_int(value))) :
+        __uint_as_float(atomicMax((unsigned int*)addr, __float_as_uint(value)));
+
+    return old;
 }
 
-__global__ void kernel_drawPolygon(matrix* m, matrix_coord screen_min, matrix_coord screen_max, unsigned char* polygon_color, vertex screen_v1, vertex screen_v2, vertex screen_v3, double* zbuffer = nullptr)
+__global__ void kernel_drawPolygon(matrix* m, matrix_coord screen_min, matrix_coord screen_max, unsigned char* polygon_color, vertex screen_v1, vertex screen_v2, vertex screen_v3, float* zbuffer = nullptr)
 {
     matrix_coord i_curr(
         threadIdx.x + blockDim.x * blockIdx.x + screen_min.x,
@@ -113,8 +110,8 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord screen_min, matrix_co
         if (zbuffer != nullptr)
         {
             int interlaced_index = i_curr.y * m->width + i_curr.x;
-            double curr_z = (baryc.x * screen_v1.z + baryc.y * screen_v2.z + baryc.z * screen_v3.z);
-            atomicMin_double(zbuffer + interlaced_index, curr_z);
+            float curr_z = (baryc.x * screen_v1.z + baryc.y * screen_v2.z + baryc.z * screen_v3.z);
+            atomicMinFloat(zbuffer + interlaced_index, curr_z);
 
             if (zbuffer[interlaced_index] == curr_z)
             {
@@ -134,7 +131,7 @@ __global__ void kernel_drawPolygon(matrix* m, matrix_coord screen_min, matrix_co
     }
 };
 
-__global__ void kernel_fill(double* arr, unsigned size, double val)
+__global__ void kernel_fill(float* arr, unsigned size, float val)
 {
     int i = threadIdx.x + blockDim.x * blockIdx.x;;
 
@@ -223,7 +220,7 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 /// @param offset how much to offset polygons
 /// @param curState used for random numbers generator
 /// @param seed used for random numbers generator
-__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, double scaleX, double scaleY, double* zbuffer, unsigned char* c_polyg_color_buffer, unsigned char* modelColor)
+__global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* polygons, unsigned n_vert, unsigned n_poly, float scaleX, float scaleY, float* zbuffer, unsigned char* c_polyg_color_buffer, unsigned char* modelColor)
 {
     //polygon index
     unsigned int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -247,8 +244,8 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
     vertex n = normal(poly_vec1, poly_vec2);
 
     vertex camera_vec(0.0, 0.0, 1.0);
-    double d = dot(n, camera_vec);
-    double viewing_angle_cosine = d/(length(n)*length(camera_vec));
+    float d = dot(n, camera_vec);
+    float viewing_angle_cosine = d/(length(n)*length(camera_vec));
 
     unsigned char* c_polyg_color = c_polyg_color_buffer + i * m->components_num;
 
@@ -339,7 +336,7 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertex* vertices, polygon* 
 };
 
 template <typename E>
-inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, double scaleX, double scaleY, unsigned char* modelColor)
+inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vertices, std::vector<polygon> *polygons, float scaleX, float scaleY, unsigned char* modelColor)
 {
     nvtxRangeId_t nvtx_render_mark = nvtxRangeStartA("render_draw");
 
@@ -371,8 +368,8 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
 */
 
     nvtxRangeId_t nvtx_render_memory_to_mark = nvtxRangeStartA("render_draw_memory_to_gpu");
-    double* d_zbuffer;
-    const unsigned d_zbuffer_bytes = img->size() * sizeof(double);
+    float* d_zbuffer;
+    const unsigned d_zbuffer_bytes = img->size() * sizeof(float);
 
     vertex* d_vertices;
     const unsigned d_vertices_bytes = vertices->size() * sizeof(vertex);
@@ -406,7 +403,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
 
     unsigned mem_offset = 0;
 
-    d_zbuffer = (double*)(d_membuf + mem_offset);
+    d_zbuffer = (float*)(d_membuf + mem_offset);
     mem_offset += d_zbuffer_bytes;
 
     d_vertices = (vertex*)(d_membuf + mem_offset);
@@ -456,7 +453,7 @@ inline void draw_polygons_filled(matrix_color<E> *img, std::vector<vertex> *vert
         zbuf_total_blocksize = 1024;
     }
 
-    kernel_fill<<<(unsigned)(img->size()/zbuf_total_blocksize +1), zbuf_total_blocksize>>>(d_zbuffer, img->size(), std::numeric_limits<double>().max());
+    kernel_fill<<<(unsigned)(img->size()/zbuf_total_blocksize +1), zbuf_total_blocksize>>>(d_zbuffer, img->size(), std::numeric_limits<float>().max());
     cuda_log(cudaGetLastError());
 
     unsigned blocknum = (unsigned)((polygons->size() / blocksize) + 1);

@@ -16,7 +16,7 @@ void draw_vertices(matrix_color<E>* m, std::vector<vertex>* vertices, E vertex_c
     }
 };
 
-void drawPolygonInternal(matrix* img, matrix_coord min, matrix_coord max, unsigned char* polygon_color, vertex v1, vertex v2, vertex v3, std::vector <double>* zbuffer = nullptr)
+void drawPolygonInternal(matrix* img, matrix_coord min, matrix_coord max, unsigned char* polygon_color, vertex v1, vertex v2, vertex v3, std::vector <float>* zbuffer = nullptr)
 {
     matrix_coord curr(0, 0);
     for (curr.x = min.x; curr.x < max.x; curr.x++)
@@ -33,7 +33,7 @@ void drawPolygonInternal(matrix* img, matrix_coord min, matrix_coord max, unsign
                 }
                 else
                 {
-                    double interpolated_z = baryc.x * v1.z + baryc.y * v2.z + baryc.z * v3.z;
+                    float interpolated_z = baryc.x * v1.z + baryc.y * v2.z + baryc.z * v3.z;
                     int buffer_index = curr.y * img->width + curr.x;
                     if (interpolated_z < (*zbuffer)[buffer_index])
                     {
@@ -65,9 +65,9 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 }
 
 template <typename E>
-void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, double scaleX, double scaleY, unsigned char* modelColor)
+void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, std::vector<polygon>* polygons, float scaleX, float scaleY, unsigned char* modelColor)
 {
-    std::vector<double> zbuffer(img->width * img->height, std::numeric_limits<double>::max());
+    std::vector<float> zbuffer(img->width * img->height, std::numeric_limits<float>::max());
     for (size_t i = 0; i < polygons->size(); i++)
     {
         vertex poly_v1(
@@ -93,8 +93,8 @@ void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, s
 
         // Направление камеры (по оси Z)
         vertex camera_vec(0.0, 0.0, 1.0);
-        double d = dot(n, camera_vec);
-        double viewing_angle_cosine = d/(length(n)*length(camera_vec));
+        float d = dot(n, camera_vec);
+        float viewing_angle_cosine = d/(length(n)*length(camera_vec));
 
         if (viewing_angle_cosine >= 0)
         {
@@ -107,8 +107,8 @@ void draw_polygons_filled(matrix_color<E>* img, std::vector<vertex>* vertices, s
         matrix_coord min(0,0);
         matrix_coord max(0,0);
 
-        double u0 = img->width / 2.0; 
-        double v0 = img->height / 2.0;
+        float u0 = img->width / 2.0; 
+        float v0 = img->height / 2.0;
         vertex v1{
         (scaleX * poly_v1.x) / poly_v1.z + u0,
         img->height - ((scaleY * poly_v1.y ) / poly_v1.z + v0),

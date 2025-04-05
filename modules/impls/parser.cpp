@@ -15,9 +15,9 @@ bool parseVertex(string source, vertex* v)
     smatch m;
     if (regex_search(source, m, r_ver))
     {
-        v->x = stod(m[1]);
-        v->y= stod(m[2]);
-        v->z = stod(m[3]);
+        v->x = stof(m[1]);
+        v->y= stof(m[2]);
+        v->z = stof(m[3]);
 
         return true;
     }

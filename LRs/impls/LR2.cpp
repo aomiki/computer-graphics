@@ -96,10 +96,10 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     vertex v;
     readObj(in_path, &vertices, &polygons);
     
-    double offsets[3] = {0, 0, 5};
-    double angles[3] = {0, 3, 0}; 
-    double scaleX = 200;
-    double scaleY = 200;
+    float offsets[3] = {0, 0, 5};
+    float angles[3] = {0, 3, 0}; 
+    float scaleX = 200;
+    float scaleY = 200;
     
     vt_transforms->rotateAndOffset(vertices.data(), vertices.data(), vertices.size(), offsets, angles);
 

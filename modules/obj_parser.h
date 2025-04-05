@@ -11,7 +11,7 @@ struct vertex{
      __shared_func__ vertex()
      {}
 
-     __shared_func__ vertex(double x, double y, double z = 0)
+     __shared_func__ vertex(float x, float y, float z = 0)
      {
           this->x = x;
           this->y = y;
@@ -20,12 +20,12 @@ struct vertex{
 
      union {
           struct {
-               double x;
-               double y;
-               double z;
+               float x;
+               float y;
+               float z;
           };
           struct {
-               double array[3];
+               float array[3];
           };
      };
 };

@@ -12,7 +12,7 @@
 /// @param[in] offset Pointer to offset vector.
 /// @param[in] n_vert Number of vertices.
 /// @return 
-__global__ void initVerticesArr(double** const c_vertices, double** c_offsets, double** rot_xyz_arr, vertex* vertices, double* d_vertices_raw_arr_membuf, double rot_xyz[9], double offset[3], unsigned n_vert)
+__global__ void initVerticesArr(float** const c_vertices, float** c_offsets, float** rot_xyz_arr, vertex* vertices, float* d_vertices_raw_arr_membuf, float rot_xyz[9], float offset[3], unsigned n_vert)
 {
     unsigned i = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -36,7 +36,7 @@ __global__ void initVerticesArr(double** const c_vertices, double** c_offsets, d
     c_offsets[i][2] = offset[2];
 }
 
-__global__ void doubleArrToVertices(vertex* vertices, double** result, unsigned n_vert)
+__global__ void doubleArrToVertices(vertex* vertices, float** result, unsigned n_vert)
 {
     unsigned i = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -62,7 +62,7 @@ vertex_transforms::~vertex_transforms()
     cuda_log(cublasDestroy(handle));
 }
 
-void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, double offsets[3], double angles[3])
+void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, float offsets[3], float angles[3])
 {
     if ((offsets[0] == 0) && (offsets[1] == 0) && (offsets[2] == 0) &&
         (angles[0] == 0) && (angles[1] == 0) && (angles[2] == 0))
@@ -71,13 +71,13 @@ void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* ve
     }
 
     //1. 2xGEMM: MULTIPLY ROTATION MATRICES
-    double cosx = cos(angles[0]), sinx = sin(angles[0]);
-    double cosy = cos(angles[1]), siny = sin(angles[1]);
-    double cosz = cos(angles[2]), sinz = sin(angles[2]);
+    float cosx = cos(angles[0]), sinx = sin(angles[0]);
+    float cosy = cos(angles[1]), siny = sin(angles[1]);
+    float cosz = cos(angles[2]), sinz = sin(angles[2]);
 
     //column-major rotation matrices
-    const unsigned rot_mat_size = 9 * sizeof(double);
-    const double h_rot_buffer[9*3] = {
+    const unsigned rot_mat_size = 9 * sizeof(float);
+    const float h_rot_buffer[9*3] = {
         //h_rot_x
         1, 0, 0,
         0, cosx, -sinx,
@@ -100,22 +100,22 @@ void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* ve
     cuda_log(cudaMemcpy(d_rot_membuf, h_rot_buffer, rot_mat_size*3, cudaMemcpyHostToDevice));
 
     //Map matrices from raw memory
-    double* d_rot_x = (double*) d_rot_membuf;
-    double* d_rot_y = (double*)(d_rot_membuf + rot_mat_size);
-    double* d_rot_z = (double*)(d_rot_membuf + rot_mat_size * 2);
+    float* d_rot_x = (float*) d_rot_membuf;
+    float* d_rot_y = (float*)(d_rot_membuf + rot_mat_size);
+    float* d_rot_z = (float*)(d_rot_membuf + rot_mat_size * 2);
 
-    double* d_rot_xy   = (double*)(d_rot_membuf + rot_mat_size * 3);
-    double* d_rot_xyz  = d_rot_x; //for the second gemm, not gonna need d_rot_x then
+    float* d_rot_xy   = (float*)(d_rot_membuf + rot_mat_size * 3);
+    float* d_rot_xyz  = d_rot_x; //for the second gemm, not gonna need d_rot_x then
 
     //Coefficients
-    const double h_alpha = 1;
-    const double h_beta = 0;
+    const float h_alpha = 1;
+    const float h_beta = 0;
 
     //rotation by x and y
-    cuda_log(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 3, 3, 3, &h_alpha, d_rot_x, 3, d_rot_y, 3, &h_beta, d_rot_xy, 3));
+    cuda_log(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 3, 3, 3, &h_alpha, d_rot_x, 3, d_rot_y, 3, &h_beta, d_rot_xy, 3));
 
     //rotation by xy and z
-    cuda_log(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 3, 3, 3, &h_alpha, d_rot_xy, 3, d_rot_z, 3, &h_beta, d_rot_xyz, 3));
+    cuda_log(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 3, 3, 3, &h_alpha, d_rot_xy, 3, d_rot_z, 3, &h_beta, d_rot_xyz, 3));
 
     //2. 1xGEMV: MULTIPLY MATRICES AND VECTORS, ADD OFFSET
 
@@ -123,16 +123,16 @@ void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* ve
     const unsigned d_vertices_bytes = n_vert * sizeof(vertex);
 
     //Arrays of pointers for batched version of gemv
-    double** d_vertices_raw_arr; //array of pointers to vertices in raw format
-    double** d_rot_xyz_arr; //array of pointers to the same matrix
-    double** d_offsets_arr; //array of pointers to the same offsets
-    const unsigned d_vert_arrays_bytes = n_vert * sizeof(double*);
+    float** d_vertices_raw_arr; //array of pointers to vertices in raw format
+    float** d_rot_xyz_arr; //array of pointers to the same matrix
+    float** d_offsets_arr; //array of pointers to the same offsets
+    const unsigned d_vert_arrays_bytes = n_vert * sizeof(float*);
     
-    double* d_offsets;
-    const unsigned d_offsets_bytes = 3 * sizeof(double);
+    float* d_offsets;
+    const unsigned d_offsets_bytes = 3 * sizeof(float);
 
-    double* d_vertices_raw_arr_membuf; //buffer for storing vertices in raw format
-    const unsigned d_vertices_raw_arr_membuf_bytes = 3 * n_vert * sizeof(double);
+    float* d_vertices_raw_arr_membuf; //buffer for storing vertices in raw format
+    const unsigned d_vertices_raw_arr_membuf_bytes = 3 * n_vert * sizeof(float);
 
     //Allocate one big raw memory chunk for all arrays
     char* d_gemv_arrays_membuf;
@@ -148,19 +148,19 @@ void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* ve
     d_vertices = (vertex*)d_gemv_arrays_membuf; 
     offset += d_vertices_bytes;
 
-    d_vertices_raw_arr = (double**)(d_gemv_arrays_membuf + offset);
+    d_vertices_raw_arr = (float**)(d_gemv_arrays_membuf + offset);
     offset += d_vert_arrays_bytes;
 
-    d_rot_xyz_arr = (double**)(d_gemv_arrays_membuf + offset);
+    d_rot_xyz_arr = (float**)(d_gemv_arrays_membuf + offset);
     offset += d_vert_arrays_bytes;
 
-    d_offsets_arr = (double**)(d_gemv_arrays_membuf + offset);
+    d_offsets_arr = (float**)(d_gemv_arrays_membuf + offset);
     offset += d_vert_arrays_bytes;
 
-    d_offsets =  (double*)(d_gemv_arrays_membuf + offset);
+    d_offsets =  (float*)(d_gemv_arrays_membuf + offset);
     offset += d_offsets_bytes;
 
-    d_vertices_raw_arr_membuf = (double*)(d_gemv_arrays_membuf + offset);
+    d_vertices_raw_arr_membuf = (float*)(d_gemv_arrays_membuf + offset);
     offset += d_vertices_raw_arr_membuf_bytes;
 
     //copy arrays data
@@ -192,10 +192,10 @@ void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* ve
     initVerticesArr<<<(unsigned)(n_vert/poly_total_blocksize + 1), poly_total_blocksize>>>(d_vertices_raw_arr, d_offsets_arr, d_rot_xyz_arr, d_vertices, d_vertices_raw_arr_membuf, d_rot_xyz, d_offsets, n_vert);
     cuda_log(cudaDeviceSynchronize());
 
-    const double h_beta_gemv = 1;
+    const float h_beta_gemv = 1;
 
     //Everything was for this moment
-    cuda_log(cublasDgemvBatched(handle, CUBLAS_OP_N, 3, 3, &h_alpha, d_rot_xyz_arr, 3, d_vertices_raw_arr, 1, &h_beta_gemv, d_offsets_arr, 1, n_vert));
+    cuda_log(cublasSgemvBatched(handle, CUBLAS_OP_N, 3, 3, &h_alpha, d_rot_xyz_arr, 3, d_vertices_raw_arr, 1, &h_beta_gemv, d_offsets_arr, 1, n_vert));
     cuda_log(cudaDeviceSynchronize());
 
     //Get our result back to RAM
