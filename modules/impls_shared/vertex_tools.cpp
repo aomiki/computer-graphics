@@ -8,10 +8,8 @@
 #include <cmath>
 #endif
 
-__shared_func__ vertex get_barycentric_coords(matrix_coord &m_coords, vertex &v1, vertex &v2, vertex &v3)
+__shared_func__ void get_barycentric_coords(vec3& baryc, screen_coords& m_coords, vec3 &v1, vec3 &v2, vec3 &v3)
 {
-    vertex baryc;
-
     baryc.x = ((m_coords.x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (m_coords.y - v3.y)) /
         ((v1.x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (v1.y - v3.y));
 
@@ -19,16 +17,14 @@ __shared_func__ vertex get_barycentric_coords(matrix_coord &m_coords, vertex &v1
         ((v1.x - v3.x) * (v2.y - v3.y) - (v2.x - v3.x) * (v1.y - v3.y));
 
     baryc.z = 1.0 - baryc.x - baryc.y;
-
-    return baryc;
 }
 
-__shared_func__ float length(vertex &vec)
+__shared_func__ float length(vec3 &vec)
 {
     return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);
 }
 
-__shared_func__ float dot(vertex &vec1, vertex &vec2)
+__shared_func__ float dot(vec3 &vec1, vec3 &vec2)
 {
     return
         vec1.x * vec2.x +
@@ -36,22 +32,20 @@ __shared_func__ float dot(vertex &vec1, vertex &vec2)
         vec1.z * vec2.z;
 }
 
-__shared_func__ vertex normal(vertex &vec1, vertex &vec2)
+__shared_func__ void normal(vec3& result, vec3 &vec1, vec3 &vec2)
 {
     //https://en.wikipedia.org/wiki/Cross_product
 
-    vertex normal_vec(
+    result = {
         vec1.y * vec2.z - vec1.z * vec2.y,
         vec1.z * vec2.x - vec1.x * vec2.z,
         vec1.x * vec2.y - vec1.y * vec2.x
-    );
-
-    return normal_vec;
+    };
 }
 
 __shared_func__ void poly_vertices_to_vectors(
-    vertex& poly_v1, vertex& poly_v2, vertex& poly_v3,
-    vertex& vec1, vertex& vec2)
+    vec3& poly_v1, vec3& poly_v2, vec3& poly_v3,
+    vec3& vec1, vec3& vec2)
 {
     vec1.x = poly_v2.x - poly_v3.x;
     vec1.y = poly_v2.y - poly_v3.y;

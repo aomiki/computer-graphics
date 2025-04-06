@@ -39,8 +39,8 @@ private:
     std::string image_basename = "";
     std::vector<unsigned char>* png_buffer = nullptr;
 
-    std::vector <vertex>* curr_vertices = nullptr;
-    std::vector <polygon>* curr_polygons = nullptr;
+    vertices* curr_vertices = nullptr;
+    polygons* curr_polygons = nullptr;
     unsigned char curr_bgColor[3] = {255, 255, 255};
     unsigned char curr_modelColor[3] = {255, 255, 255};
 

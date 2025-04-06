@@ -11,7 +11,7 @@ vertex_transforms::~vertex_transforms()
 {
 }
 
-void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* vertices, unsigned n_vert, float offsets[3], float angles[3])
+void vertex_transforms::rotateAndOffset(vertices* verts_transformed, vertices* verts, float offsets[3], float angles[3])
 {
     float cosx = cos(angles[0]), sinx = sin(angles[0]);
     float cosy = cos(angles[1]), siny = sin(angles[1]);
@@ -42,11 +42,18 @@ void vertex_transforms::rotateAndOffset(vertex* vertices_transformed, vertex* ve
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3, 3, 3, 1.0, rot_x, 3, rot_y, 3, 0.0, rot_xy, 3);
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 3, 3, 3, 1.0, rot_xy, 3, rot_z, 3, 0.0, rot_xyz, 3);
 
-    for (unsigned i = 0; i < n_vert; i++)
+    float* verts_membuf = new float[verts->size * 3];
+    verts_transformed->x = verts_membuf;
+    verts_transformed->y = verts_membuf + verts->size;
+    verts_transformed->z = verts_membuf + verts->size * 2;
+
+    for (unsigned i = 0; i < verts->size; i++)
     {
-        cblas_sgemv(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, rot_xyz, 3, vertices[i].array, 1, 0.0, result, 1);
-        vertices_transformed[i].x = result[0] + offsets[0];
-        vertices_transformed[i].y = result[1] + offsets[1];
-        vertices_transformed[i].z = result[2] + offsets[2];
+        float vert[3] { verts->x[i], verts->y[i], verts->z[i] };
+
+        cblas_sgemv(CblasRowMajor, CblasNoTrans, 3, 3, 1.0, rot_xyz, 3, vert, 1, 0.0, result, 1);
+        verts_transformed->x[i] = result[0] + offsets[0];
+        verts_transformed->y[i] = result[1] + offsets[1];
+        verts_transformed->z[i] = result[2] + offsets[2];
     }
 }

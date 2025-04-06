@@ -9,30 +9,30 @@
 
 using namespace std;
 
-bool parseVertex(string source, vertex* v)
+bool parseVertex(string source, vertices* verts, unsigned i)
 {
     const regex r_ver ("^v\\s+(-?[0-9]+(?:\\.[0-9]+)?) (-?[0-9]+(?:\\.[0-9]+)?) (-?[0-9]+(?:\\.[0-9]+)?)\\s*$");
     smatch m;
     if (regex_search(source, m, r_ver))
     {
-        v->x = stof(m[1]);
-        v->y= stof(m[2]);
-        v->z = stof(m[3]);
+        verts->x[i] = stof(m[1]);
+        verts->y[i] = stof(m[2]);
+        verts->z[i] = stof(m[3]);
 
         return true;
     }
     return false;
 }   
 
-bool parsePolygon(string source, polygon* p) 
+bool parsePolygon(string source, polygons* polys, unsigned i) 
 {
     const regex pol (R"(^f\s+([0-9]+)(?:\/([0-9]+)?(?:\/([0-9]+))?)? ([0-9]+)(?:\/([0-9]+)?(?:\/([0-9]+))?)? ([0-9]+)(?:\/([0-9]+)?(?:\/([0-9]+))?)?(?: ([0-9]+)(?:\/([0-9]+)?(?:\/([0-9]+))?)?)?\s*$)");
     smatch m;
     if (regex_search(source, m, pol))
     {
-        p->vertex_index1 = stoi(m[1]);
-        p->vertex_index2 = stoi(m[4]);
-        p->vertex_index3 = stoi(m[7]);
+        polys->vertex_index1[i] = stoi(m[1]);
+        polys->vertex_index2[i] = stoi(m[4]);
+        polys->vertex_index3[i] = stoi(m[7]);
 
         return true;
     }
@@ -133,7 +133,7 @@ struct ObjLine
     std::string line;
 };
 
-void processVertexLine(tbb::concurrent_queue<ObjLine>* queue, std::atomic<bool>* stop_token, std::vector<vertex>* vertices = nullptr, std::vector<polygon>* polygons = nullptr)
+void processVertexLine(tbb::concurrent_queue<ObjLine>* queue, std::atomic<bool>* stop_token, vertices* verts = nullptr, polygons* polys = nullptr)
 {
     ObjLine lineInfo;
 
@@ -145,19 +145,17 @@ void processVertexLine(tbb::concurrent_queue<ObjLine>* queue, std::atomic<bool>*
             {
                 case ObjElement::Vertex:
                 {
-                    vertex v;
-                    if ((vertices != nullptr) && parseVertex(lineInfo.line, &v))
+                    if (verts != nullptr)
                     {
-                        (*vertices)[lineInfo.i] = v;
+                        parseVertex(lineInfo.line, verts, lineInfo.i);
                     }
                     break;   
                 }
                 case ObjElement::Polygon:
                 {
-                    polygon p;
-                    if ((polygons != nullptr) && parsePolygon(lineInfo.line, &p))
+                    if (polys != nullptr)
                     {
-                        (*polygons)[lineInfo.i] = p; 
+                        parsePolygon(lineInfo.line, polys, lineInfo.i);
                     }
                     break;
                 }
@@ -172,9 +170,9 @@ void processVertexLine(tbb::concurrent_queue<ObjLine>* queue, std::atomic<bool>*
     }
 }
 
-void readObj(const string filename, vector <vertex>* vertices, vector <polygon>* polygons)
+void readObj(const string filename, vertices* verts, polygons* polys)
 {
-    if ((vertices == nullptr) && (polygons == nullptr))
+    if ((verts == nullptr) && (polys == nullptr))
         return;
 
     ifstream in(filename);
@@ -202,8 +200,18 @@ void readObj(const string filename, vector <vertex>* vertices, vector <polygon>*
     in.clear();
     in.seekg(0);
 
-    vertices->resize(n_vert);
-    polygons->resize(n_poly);
+    verts->size = n_vert;
+    polys->size = n_poly;
+
+    float* verts_arr = new float[n_vert * 3];
+    verts->x = verts_arr;
+    verts->y = verts_arr + n_vert;
+    verts->z = verts_arr + n_vert * 2;
+
+    unsigned* polys_arr = new unsigned[n_poly * 3];
+    polys->vertex_index1 = polys_arr;
+    polys->vertex_index2 = polys_arr + n_poly;
+    polys->vertex_index3 = polys_arr + n_poly*2;
     
     tbb::concurrent_queue<ObjLine> queue;
     std::atomic<bool> stop_token = false;
@@ -211,7 +219,7 @@ void readObj(const string filename, vector <vertex>* vertices, vector <polygon>*
     int tMax = thread::hardware_concurrency();
     std::vector<std::thread> threads(tMax);
     for (int i = 0; i < tMax; i++)
-        threads[i] = std::thread(processVertexLine, &queue, &stop_token, vertices, polygons);
+        threads[i] = std::thread(processVertexLine, &queue, &stop_token, verts, polys);
 
     unsigned long vert_i = 0, poly_i = 0;
     while (getline(in, line))

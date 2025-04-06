@@ -115,20 +115,20 @@ void MainWindow::updateImage()
 }
 
 template <typename T>
-void render_model(matrix_color<T>* matrix, QString renderType, std::vector<vertex>* vertices, std::vector<polygon>* polygons, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor, vertex_transforms* vt_transforms)
+void render_model(matrix_color<T>* matrix, QString renderType, vertices* verts, polygons* polys, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor, vertex_transforms* vt_transforms)
 {
-    std::vector<vertex> transformed_vertices(vertices->size());
+    vertices transformed_verts;
 
-    vt_transforms->rotateAndOffset(transformed_vertices.data(), vertices->data(), vertices->size(), offsets, angles);
+    vt_transforms->rotateAndOffset(&transformed_verts, verts, offsets, angles);
 
     if (renderType == "polygons")
     {
-        draw_polygons_filled(matrix, &transformed_vertices, polygons, scaleX, scaleY, modelColor);
+        draw_polygons_filled(matrix, &transformed_verts, polys, scaleX, scaleY, modelColor);
     }
     else if (renderType == "vertices")
     {
         unsigned char color[3] = {0, 0, 0};
-        draw_vertices(matrix, &transformed_vertices, matrix->c_arr_to_element(color), scaleX, scaleY);
+        draw_vertices(matrix, &transformed_verts, matrix->c_arr_to_element(color), scaleX, scaleY);
     }
     else
     {
@@ -249,8 +249,8 @@ void MainWindow::buttonRenderClicked()
 
     updateImage();
 
-    ui->label_vertexCount->setNum((float)curr_vertices->size());
-    ui->label_polygonCount->setNum((float)curr_polygons->size());
+    ui->label_vertexCount->setNum((float)curr_vertices->size);
+    ui->label_polygonCount->setNum((float)curr_polygons->size);
 
     #if defined __has_include
     #  if __has_include (<nvtx3/nvToolsExt.h>)
@@ -271,16 +271,16 @@ void MainWindow::acceptFilenameClicked()
     log("accepted filename: " + filename);
     image_basename = std::filesystem::path(filename.toStdString()).stem();
 
-    curr_vertices = new std::vector<vertex>();
-    curr_polygons = new std::vector<polygon>();
+    curr_vertices = new vertices();
+    curr_polygons = new polygons();
 
     log("");
     log("starting reading...");
     readObj(filename.toStdString(), curr_vertices, curr_polygons);
     log("finished reading.");
     log("");
-    log("vertices: " + QString::number(curr_vertices->size()));
-    log("polygons: " + QString::number(curr_polygons->size()));
+    log("vertices: " + QString::number(curr_vertices->size));
+    log("polygons: " + QString::number(curr_polygons->size));
     log("");
 }
 
