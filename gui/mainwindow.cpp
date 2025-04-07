@@ -115,20 +115,18 @@ void MainWindow::updateImage()
 }
 
 template <typename T>
-void render_model(matrix_color<T>* matrix, QString renderType, vertices* verts, polygons* polys, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor, vertex_transforms* vt_transforms)
+void render_model(matrix_color<T>* matrix, QString renderType, model_renderer* model, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor)
 {
-    vertices transformed_verts;
-
-    vt_transforms->rotateAndOffset(&transformed_verts, verts, offsets, angles);
+    model->rotateAndOffset(offsets, angles);
 
     if (renderType == "polygons")
     {
-        draw_polygons_filled(matrix, &transformed_verts, polys, scaleX, scaleY, modelColor);
+        model->draw_polygons(matrix, scaleX, scaleY, modelColor);
     }
     else if (renderType == "vertices")
     {
         unsigned char color[3] = {0, 0, 0};
-        draw_vertices(matrix, &transformed_verts, matrix->c_arr_to_element(color), scaleX, scaleY);
+        model->draw_vertices(matrix, matrix->c_arr_to_element(color), scaleX, scaleY);
     }
     else
     {
@@ -147,7 +145,7 @@ void MainWindow::buttonRenderClicked()
     #  endif
     #endif
 
-    if(curr_vertices == nullptr || curr_polygons == nullptr)
+    if(curr_model == nullptr)
     {
         log("data is not loaded!");
         return;
@@ -177,7 +175,6 @@ void MainWindow::buttonRenderClicked()
     matrix* img_matrix;
     ImageColorScheme colorScheme;
 
-
     if ((curr_bgColor[0] == curr_bgColor[1] && curr_bgColor[1] == curr_bgColor[2]) &&
         (curr_modelColor[0] == curr_modelColor[1] && curr_modelColor[1] == curr_modelColor[2])    
     )
@@ -202,10 +199,10 @@ void MainWindow::buttonRenderClicked()
     switch (colorScheme)
     {
         case IMAGE_GRAY:
-            render_model((matrix_gray*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor, vt_transform);
+            render_model((matrix_gray*)img_matrix, renderType, curr_model, offsets, angles, scaleX, scaleY, curr_modelColor);
             break;
         case IMAGE_RGB:
-            render_model((matrix_rgb*)img_matrix, renderType, curr_vertices, curr_polygons, offsets, angles, scaleX, scaleY, curr_modelColor, vt_transform);
+            render_model((matrix_rgb*)img_matrix, renderType, curr_model, offsets, angles, scaleX, scaleY, curr_modelColor);
             break;
         default:
             break;
@@ -222,9 +219,7 @@ void MainWindow::buttonRenderClicked()
         png_buffer = new std::vector<unsigned char>();
     }
 
-
     codec->encode(png_buffer, img_matrix, colorScheme, 8);
-
 
     log("encoded.");
     log("");
@@ -249,8 +244,8 @@ void MainWindow::buttonRenderClicked()
 
     updateImage();
 
-    ui->label_vertexCount->setNum((float)curr_vertices->size);
-    ui->label_polygonCount->setNum((float)curr_polygons->size);
+    ui->label_vertexCount->setNum((float)curr_model->get_vertices_size());
+    ui->label_polygonCount->setNum((float)curr_model->get_polygons_size());
 
     #if defined __has_include
     #  if __has_include (<nvtx3/nvToolsExt.h>)
@@ -271,17 +266,25 @@ void MainWindow::acceptFilenameClicked()
     log("accepted filename: " + filename);
     image_basename = std::filesystem::path(filename.toStdString()).stem();
 
-    curr_vertices = new vertices();
-    curr_polygons = new polygons();
+    vertices* verts = new vertices();
+    polygons* polys = new polygons();
 
     log("");
     log("starting reading...");
-    readObj(filename.toStdString(), curr_vertices, curr_polygons);
+    readObj(filename.toStdString(), verts, polys);
     log("finished reading.");
     log("");
-    log("vertices: " + QString::number(curr_vertices->size));
-    log("polygons: " + QString::number(curr_polygons->size));
+    log("vertices: " + QString::number(verts->size));
+    log("polygons: " + QString::number(polys->size));
     log("");
+
+    curr_model = new model_renderer(verts, polys, vt_transform);
+
+    delete [] verts->x;
+    delete verts;
+
+    delete [] polys->vertex_index1;
+    delete polys;
 }
 
 void MainWindow::buttonSaveClicked()

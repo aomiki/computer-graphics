@@ -5,6 +5,7 @@
 #include "image_codec.h"
 #include "vertex_tools.h"
 #include "obj_parser.h"
+#include "image_draw_objects.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -39,8 +40,7 @@ private:
     std::string image_basename = "";
     std::vector<unsigned char>* png_buffer = nullptr;
 
-    vertices* curr_vertices = nullptr;
-    polygons* curr_polygons = nullptr;
+    model_renderer* curr_model = nullptr;
     unsigned char curr_bgColor[3] = {255, 255, 255};
     unsigned char curr_modelColor[3] = {255, 255, 255};
 

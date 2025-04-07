@@ -26,20 +26,18 @@ __global__ void kernel_drawVertices(matrix* m, vertices* verts, unsigned char* c
     m->get(x, y)[comp] = components[comp];
 };
 
+
+
 template<typename E>
-void draw_vertices(matrix_color<E>* m, vertices* verts, E vertex_color, float scaleX, float scaleY)
+void model_renderer::draw_vertices(matrix_color<E>* m, E vertex_color, float scaleX, float scaleY)
 {
     unsigned max_block_length = (1024 / m->components_num);
 
-    int block_length = min(max_block_length, verts->size);
+    int block_length = min(max_block_length, n_verts);
 
-    int block_num = (int)((verts->size / block_length)+1);
+    int block_num = (int)((n_verts / block_length)+1);
 
     dim3 blockSize(block_length, m->components_num);
-
-    vertices* d_verts;
-    const unsigned d_verts_bytes = sizeof(vertices);
-    const unsigned d_verts_arrs_bytes = verts->size * sizeof(float);
 
     matrix* d_m;
     const unsigned d_m_bytes = sizeof(matrix);
@@ -47,35 +45,18 @@ void draw_vertices(matrix_color<E>* m, vertices* verts, E vertex_color, float sc
     unsigned char* d_arr_interlaced;
     const unsigned d_arr_interlaced_bytes = m->size_interlaced();
     
-    unsigned char* d_vals;
-    const unsigned d_vals_bytes = m->components_num * sizeof(unsigned char);
+    unsigned char* d_vertex_color;
+    const unsigned d_vertex_color_bytes = m->components_num * sizeof(unsigned char);
 
     char* d_membuf;
     cuda_log(cudaMalloc(
         &d_membuf,
-        d_verts_bytes +
-        d_verts_arrs_bytes * 3 +
         d_m_bytes +
         d_arr_interlaced_bytes +
-        d_vals_bytes
+        d_vertex_color_bytes
     ));
 
-    vertices h_verts_temp;
-    h_verts_temp.size = verts->size;
-
     unsigned mem_offset = 0;
-
-    d_verts = (vertices*)(d_membuf + mem_offset);
-    mem_offset += d_verts_bytes;
-
-    h_verts_temp.x = (float*)(d_membuf + mem_offset);
-    mem_offset += d_verts_arrs_bytes;
-
-    h_verts_temp.y = (float*)(d_membuf + mem_offset);
-    mem_offset += d_verts_arrs_bytes;
-
-    h_verts_temp.z = (float*)(d_membuf + mem_offset);
-    mem_offset += d_verts_arrs_bytes;
 
     d_m = (matrix*)(d_membuf + mem_offset);
     mem_offset += d_m_bytes;
@@ -83,19 +64,17 @@ void draw_vertices(matrix_color<E>* m, vertices* verts, E vertex_color, float sc
     d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += d_arr_interlaced_bytes;
 
-    d_vals = (unsigned char*)(d_membuf + mem_offset);
-    mem_offset += d_vals_bytes;
+    d_vertex_color = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_vertex_color_bytes;
 
     transferMatrixToDevice(d_m, d_arr_interlaced, m);
 
-    unsigned char* h_vals = new unsigned char[m->components_num];
+    unsigned char* h_vertex_color = new unsigned char[m->components_num];
 
-    m->element_to_c_arr(h_vals, vertex_color);
-    cuda_log(cudaMemcpy(d_vals, h_vals, d_vals_bytes, cudaMemcpyHostToDevice));
-    cuda_log(cudaMemcpy(h_verts_temp.x, verts->x, d_verts_arrs_bytes * 3, cudaMemcpyHostToDevice))
-    cuda_log(cudaMemcpy(d_verts, &h_verts_temp, d_verts_bytes, cudaMemcpyHostToDevice));
+    m->element_to_c_arr(h_vertex_color, vertex_color);
+    cuda_log(cudaMemcpy(d_vertex_color, h_vertex_color, d_vertex_color_bytes, cudaMemcpyHostToDevice));
 
-    kernel_drawVertices<<<block_num, blockSize>>>(d_m, d_verts, d_vals, scaleX, scaleY);
+    kernel_drawVertices<<<block_num, blockSize>>>(d_m, d_verts_transformed, d_vertex_color, scaleX, scaleY);
 
     cuda_log(cudaDeviceSynchronize());
 
@@ -103,7 +82,7 @@ void draw_vertices(matrix_color<E>* m, vertices* verts, E vertex_color, float sc
 
     cuda_log(cudaFree(d_membuf));
     
-    delete h_vals;
+    delete h_vertex_color;
 };
 
 __device__ __forceinline__ float atomicMinFloat(float* addr, float value) {
@@ -366,74 +345,26 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertices* verts, polygons* 
     cuda_log(cudaGetLastError());
 };
 
-template <typename E>
-inline void draw_polygons_filled(matrix_color<E> *img, vertices *verts, polygons *polys, float scaleX, float scaleY, unsigned char* modelColor)
+model_renderer::model_renderer(vertices *verts, polygons *polys, vertex_transforms* vt_transformer)
 {
-    nvtxRangeId_t nvtx_render_mark = nvtxRangeStartA("render_draw");
+    this->vt_transformer = vt_transformer;
+    this->d_verts_transformed_membuf = nullptr;
+    this->n_verts = verts->size;
+    this->n_polys = polys->size;
 
-    //CUDA-SPECIFIC
-    //Итерируемся по полигонам. На каждой такой итерации - получаем нужные вершины и конвертируем в координаты экрана.
-    //Затем создаем квадрат в пределах этих вершин и итерируемся по каждому пикселю в квадрате, закрашивая либо не закрашивая по пути
-    //основные индексы: i полигонов, x и y итерации по квадрату
-    
-    unsigned blocksize = 32;
-    if (polys->size >= 4480)
-    {
-        blocksize = 128;
-    }
-
-    if (polys->size >= 8960)
-    {
-        blocksize = 256;
-    }
-
-    if (polys->size >= 17920)
-    {
-        blocksize = 512;
-    }
-/*
-    if (polygons->size() >= 35840)
-    {
-        blocksize = 1024;
-    }
-*/
-
-    nvtxRangeId_t nvtx_render_memory_to_mark = nvtxRangeStartA("render_draw_memory_to_gpu");
-    float* d_zbuffer;
-    const unsigned d_zbuffer_bytes = img->size() * sizeof(float);
-
-    vertices* d_verts;
+    //Transfer geometry to GPU memory.
     const unsigned d_verts_bytes = sizeof(vertices);
     const unsigned d_verts_arrs_bytes = verts->size * sizeof(float);
 
-    polygons* d_polys;
     const unsigned d_polys_bytes = sizeof(polygons);
     const unsigned d_polys_arrs_bytes = polys->size * sizeof(unsigned);
 
-    matrix* d_m;
-    const unsigned d_m_bytes = sizeof(matrix);
-
-    unsigned char* d_arr_interlaced;
-    const unsigned d_arr_interlaced_bytes = img->size_interlaced();
-
-    unsigned char* c_polyg_color_buffer;
-    const unsigned c_polyg_color_buffer_bytes = polys->size * img->components_num;
-
-    unsigned char* d_modelColor;
-    const unsigned d_modelColor_bytes = img->components_num * sizeof(unsigned char);
-
-    char* d_membuf;
     cuda_log(cudaMalloc(
-        &d_membuf,
-        d_zbuffer_bytes +
+        &d_original_geometry_membuf,
         d_verts_arrs_bytes * 3 +
         d_polys_arrs_bytes * 3 +
         d_verts_bytes +
-        d_polys_bytes +
-        d_m_bytes + 
-        d_arr_interlaced_bytes + 
-        c_polyg_color_buffer_bytes +
-        d_modelColor_bytes
+        d_polys_bytes
     ));
 
     vertices h_verts_temp;
@@ -443,32 +374,151 @@ inline void draw_polygons_filled(matrix_color<E> *img, vertices *verts, polygons
 
     unsigned mem_offset = 0;
 
-    d_zbuffer = (float*)(d_membuf + mem_offset);
-    mem_offset += d_zbuffer_bytes;
-
-    h_verts_temp.x = (float*)(d_membuf + mem_offset);
+    h_verts_temp.x = (float*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_verts_arrs_bytes;
 
-    h_verts_temp.y = (float*)(d_membuf + mem_offset);
+    h_verts_temp.y = (float*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_verts_arrs_bytes;
 
-    h_verts_temp.z = (float*)(d_membuf + mem_offset);
+    h_verts_temp.z = (float*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_verts_arrs_bytes;
 
-    h_polys_temp.vertex_index1 = (unsigned*)(d_membuf + mem_offset);
+    h_polys_temp.vertex_index1 = (unsigned*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_polys_arrs_bytes;
 
-    h_polys_temp.vertex_index2 = (unsigned*)(d_membuf + mem_offset);
+    h_polys_temp.vertex_index2 = (unsigned*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_polys_arrs_bytes;
 
-    h_polys_temp.vertex_index3 = (unsigned*)(d_membuf + mem_offset);
+    h_polys_temp.vertex_index3 = (unsigned*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_polys_arrs_bytes;
 
-    d_verts = (vertices*)(d_membuf + mem_offset);
+    d_verts = (vertices*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_verts_bytes;
 
-    d_polys = (polygons*)(d_membuf + mem_offset);
+    d_polys = (polygons*)(d_original_geometry_membuf + mem_offset);
     mem_offset += d_polys_bytes;
+
+    cuda_log(cudaMemcpy(h_verts_temp.x, verts->x, d_verts_arrs_bytes * 3, cudaMemcpyHostToDevice))
+    cuda_log(cudaMemcpy(d_verts, &h_verts_temp, d_verts_bytes, cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(h_polys_temp.vertex_index1, polys->vertex_index1, d_polys_arrs_bytes * 3, cudaMemcpyHostToDevice))
+    cuda_log(cudaMemcpy(d_polys, &h_polys_temp, d_polys_bytes, cudaMemcpyHostToDevice));
+
+    this->d_verts_transformed = d_verts;
+}
+
+model_renderer::~model_renderer()
+{
+    if (d_original_geometry_membuf != nullptr)
+    {
+        cudaFree(d_original_geometry_membuf);
+    }
+    if (d_verts_transformed_membuf != nullptr)
+    {
+        cudaFree(d_verts_transformed_membuf);
+    }
+}
+
+void model_renderer::rotateAndOffset(float offsets[3], float angles[3])
+{
+    const unsigned d_verts_bytes = sizeof(vertices);
+    const unsigned d_verts_arrs_bytes = n_verts * sizeof(float);
+
+    h_verts_transformed_d_copy.size = n_verts;
+
+    //if space for transformed vertices wasn't allocated on GPU - allocate 
+    if (d_verts_transformed == d_verts)
+    {
+        //Allocate raw memory
+        cuda_log(cudaMalloc(
+            &d_verts_transformed_membuf,
+            d_verts_arrs_bytes * 3 +
+            d_verts_bytes
+        ));
+
+        //partition raw space, get pointers to all arrays
+        unsigned mem_offset = 0;
+
+        h_verts_transformed_d_copy.x = (float*)(d_verts_transformed_membuf + mem_offset);
+        mem_offset += d_verts_arrs_bytes;
+
+        h_verts_transformed_d_copy.y = (float*)(d_verts_transformed_membuf + mem_offset);
+        mem_offset += d_verts_arrs_bytes;
+
+        h_verts_transformed_d_copy.z = (float*)(d_verts_transformed_membuf + mem_offset);
+        mem_offset += d_verts_arrs_bytes;
+
+        d_verts_transformed = (vertices*)(d_verts_transformed_membuf + mem_offset);
+        mem_offset += d_verts_bytes;
+
+        //copy pointers to GPU struct
+        cuda_log(cudaMemcpy(d_verts_transformed, &h_verts_transformed_d_copy, d_verts_bytes, cudaMemcpyHostToDevice));
+    }
+
+    vt_transformer->rotateAndOffset(d_verts_transformed, d_verts, n_verts, offsets, angles);
+}
+
+template<typename E>
+void model_renderer::draw_polygons<E>(matrix_color<E> *img, float scaleX, float scaleY, unsigned char* modelColor)
+{
+    nvtxRangeId_t nvtx_render_mark = nvtxRangeStartA("render_draw");
+
+    //CUDA-SPECIFIC
+    //Итерируемся по полигонам. На каждой такой итерации - получаем нужные вершины и конвертируем в координаты экрана.
+    //Затем создаем квадрат в пределах этих вершин и итерируемся по каждому пикселю в квадрате, закрашивая либо не закрашивая по пути
+    //основные индексы: i полигонов, x и y итерации по квадрату
+
+    unsigned blocksize = 32;
+    if (n_polys >= 4480)
+    {
+        blocksize = 128;
+    }
+
+    if (n_polys >= 8960)
+    {
+        blocksize = 256;
+    }
+
+    if (n_polys >= 17920)
+    {
+        blocksize = 512;
+    }
+/*
+    if (n_polys >= 35840)
+    {
+        blocksize = 1024;
+    }
+*/
+
+    nvtxRangeId_t nvtx_render_memory_to_mark = nvtxRangeStartA("render_draw_memory_to_gpu");
+    float* d_zbuffer;
+    const unsigned d_zbuffer_bytes = img->size() * sizeof(float);
+
+    matrix* d_m;
+    const unsigned d_m_bytes = sizeof(matrix);
+
+    unsigned char* d_arr_interlaced;
+    const unsigned d_arr_interlaced_bytes = img->size_interlaced();
+
+    unsigned char* c_polyg_color_buffer;
+    const unsigned c_polyg_color_buffer_bytes = n_polys * img->components_num;
+
+    unsigned char* d_modelColor;
+    const unsigned d_modelColor_bytes = img->components_num * sizeof(unsigned char);
+
+    char* d_membuf;
+    cuda_log(cudaMalloc(
+        &d_membuf,
+        d_zbuffer_bytes +
+        d_m_bytes +
+        d_arr_interlaced_bytes +
+        c_polyg_color_buffer_bytes +
+        d_modelColor_bytes
+    ));
+
+    unsigned mem_offset = 0;
+
+    d_zbuffer = (float*)(d_membuf + mem_offset);
+    mem_offset += d_zbuffer_bytes;
 
     d_m = (matrix*)(d_membuf + mem_offset);
     mem_offset += d_m_bytes;
@@ -484,10 +534,6 @@ inline void draw_polygons_filled(matrix_color<E> *img, vertices *verts, polygons
 
     transferMatrixToDevice(d_m, d_arr_interlaced, img);
 
-    cuda_log(cudaMemcpy(h_verts_temp.x, verts->x, d_verts_arrs_bytes * 3, cudaMemcpyHostToDevice))
-    cuda_log(cudaMemcpy(d_verts, &h_verts_temp, d_verts_bytes, cudaMemcpyHostToDevice));
-    cuda_log(cudaMemcpy(h_polys_temp.vertex_index1, polys->vertex_index1, d_polys_arrs_bytes * 3, cudaMemcpyHostToDevice))
-    cuda_log(cudaMemcpy(d_polys, &h_polys_temp, d_polys_bytes, cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_modelColor, modelColor, d_modelColor_bytes, cudaMemcpyHostToDevice));
 
     nvtxRangeEnd(nvtx_render_memory_to_mark);
@@ -516,12 +562,12 @@ inline void draw_polygons_filled(matrix_color<E> *img, vertices *verts, polygons
     kernel_fill<<<(unsigned)(img->size()/zbuf_total_blocksize +1), zbuf_total_blocksize>>>(d_zbuffer, img->size(), std::numeric_limits<float>().max());
     cuda_log(cudaGetLastError());
 
-    unsigned blocknum = (unsigned)((polys->size / blocksize) + 1);
+    unsigned blocknum = (unsigned)((n_polys / blocksize) + 1);
 
     //by default the limit on the number of simultaneous kernel launches is imposed 
-    cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, polys->size));
+    cuda_log(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, n_polys));
 
-    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_verts, d_polys, scaleX, scaleY, d_zbuffer, c_polyg_color_buffer, d_modelColor);
+    kernel_drawPolygonsFilled<<<blocknum, blocksize>>>(d_m, d_verts_transformed, d_polys, scaleX, scaleY, d_zbuffer, c_polyg_color_buffer, d_modelColor);
 
     cuda_log(cudaGetLastError());
     cuda_log(cudaDeviceSynchronize());

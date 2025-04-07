@@ -12,29 +12,27 @@
 /// @param[in] offset Pointer to offset vector.
 /// @param[in] n_vert Number of vertices.
 /// @return 
-__global__ void initVerticesArr(float** const c_vertices, float** c_offsets, float** rot_xyz_arr, vertices* verts, float* d_vertices_raw_arr_membuf, float rot_xyz[9], float offset[3])
+__global__ void kernel_initBatchPtrs(float** const vertices_batch_ptrs, float** offsets_batch_ptrs, float** rot_xyz_batch_ptrs, vertices* verts, vertices* verts_transformed, float rot_xyz[9], float offset[3])
 {
     unsigned i = threadIdx.x + blockDim.x * blockIdx.x;
 
     if (i >= verts->size)
         return;
 
-    rot_xyz_arr[i] = rot_xyz;
+    rot_xyz_batch_ptrs[i] = rot_xyz;
 
-    //copy vertices to c_vertices - they are simply going to be coefficients in gemv
-    c_vertices[i] = d_vertices_raw_arr_membuf + i*3;
-    c_vertices[i][0] = verts->x[i];
-    c_vertices[i][1] = verts->y[i];
-    c_vertices[i][2] = verts->z[i];
-    
-    //point each offset to vertex - so when gemv writes to offsets, it writes directly to vertex* vertices
+    //point each vertices_batch_ptrs to original vertices - they are simply going to be coefficients in gemv
     //point to the first element, each subsequent element is caculated using stride
-    c_offsets[i] = verts->x + i;
+    vertices_batch_ptrs[i] = verts->x + i;
+
+    //point each offset to resulitng vertices buffer - so when gemv writes to offsets, it writes directly to vertex* resulting vertices
+    //point to the first element, each subsequent element is caculated using stride
+    offsets_batch_ptrs[i] = verts_transformed->x + i;
 
     //replace vertex data with offset
-    verts->x[i] = offset[0];
-    verts->y[i] = offset[1];
-    verts->z[i] = offset[2];
+    verts_transformed->x[i] = offset[0];
+    verts_transformed->y[i] = offset[1];
+    verts_transformed->z[i] = offset[2];
 }
 
 __global__ void doubleArrToVertices(vertex* vertices, float** result, unsigned n_vert)
@@ -63,7 +61,7 @@ vertex_transforms::~vertex_transforms()
     cuda_log(cublasDestroy(handle));
 }
 
-void vertex_transforms::rotateAndOffset(vertices* verts_transformed, vertices* verts, float offsets[3], float angles[3])
+void vertex_transforms::rotateAndOffset(vertices* d_verts_transformed, vertices* d_verts, unsigned n_verts, float offsets[3], float angles[3])
 {
     if ((offsets[0] == 0) && (offsets[1] == 0) && (offsets[2] == 0) &&
         (angles[0] == 0) && (angles[1] == 0) && (angles[2] == 0))
@@ -120,112 +118,72 @@ void vertex_transforms::rotateAndOffset(vertices* verts_transformed, vertices* v
 
     //2. 1xGEMV: MULTIPLY MATRICES AND VECTORS, ADD OFFSET
 
-    vertices* d_verts; //array of vertices in our format
-    const unsigned d_verts_bytes = sizeof(vertices);
-    const unsigned d_verts_arrs_bytes = verts->size * sizeof(float);
-
     //Arrays of pointers for batched version of gemv
-    float** d_vertices_raw_arr; //array of pointers to vertices in gemv format
-    float** d_rot_xyz_arr; //array of pointers to the same matrix
-    float** d_offsets_arr; //array of pointers to the same offsets
-    const unsigned d_vert_arrays_batched_bytes = verts->size * sizeof(float*);
-    
+    float** d_vertices_batch_ptrs; //array of pointers to vertices in gemv format
+    float** d_rot_xyz_batch_ptrs; //array of pointers to the same matrix
+    float** d_offsets_batch_ptrs; //array of pointers to the same offsets
+    const unsigned d_float_ptr_batch_bytes = n_verts * sizeof(float*);
+
     float* d_offsets;
     const unsigned d_offsets_bytes = 3 * sizeof(float);
 
-    float* d_vertices_raw_arr_membuf; //buffer for storing vertices in raw format
-    const unsigned d_vertices_raw_arr_membuf_bytes = 3 * verts->size * sizeof(float);
-
     //Allocate one big raw memory chunk for all arrays
-    char* d_gemv_arrays_membuf;
-    cuda_log(cudaMalloc(&d_gemv_arrays_membuf, 
-        d_verts_arrs_bytes * 3 +
-        d_verts_bytes +                     //d_verts
-        d_vert_arrays_batched_bytes * 3 +          //d_vertices_raw_arr, d_rot_xyz_arr, d_offsets_arr
-        d_offsets_bytes +                 //d_offsets
-        d_vertices_raw_arr_membuf_bytes  //d_vertices_raw_arr_membuf
+    char* d_batch_ptrs_membuf;
+    cuda_log(cudaMalloc(&d_batch_ptrs_membuf,
+        d_float_ptr_batch_bytes * 3 +    //d_vertices_batch_ptrs, d_rot_xyz_batch_ptrs, d_offsets_batch_ptrs
+        d_offsets_bytes                 //d_offsets
     ));
-
-    vertices h_verts_temp;
-    h_verts_temp.size = verts->size;
 
     //map arrays from raw allocated memory
     unsigned offset = 0;
 
-    d_vertices_raw_arr = (float**)(d_gemv_arrays_membuf + offset);
-    offset += d_vert_arrays_batched_bytes;
+    d_vertices_batch_ptrs = (float**)(d_batch_ptrs_membuf + offset);
+    offset += d_float_ptr_batch_bytes;
 
-    d_rot_xyz_arr = (float**)(d_gemv_arrays_membuf + offset);
-    offset += d_vert_arrays_batched_bytes;
+    d_rot_xyz_batch_ptrs = (float**)(d_batch_ptrs_membuf + offset);
+    offset += d_float_ptr_batch_bytes;
 
-    d_verts = (vertices*)(d_gemv_arrays_membuf + offset);
-    offset += d_verts_bytes;
+    d_offsets_batch_ptrs = (float**)(d_batch_ptrs_membuf + offset);
+    offset += d_float_ptr_batch_bytes;
 
-    d_offsets_arr = (float**)(d_gemv_arrays_membuf + offset);
-    offset += d_vert_arrays_batched_bytes;
-
-    h_verts_temp.x = (float*)(d_gemv_arrays_membuf + offset);
-    offset += d_verts_arrs_bytes;
-
-    h_verts_temp.y = (float*)(d_gemv_arrays_membuf + offset);
-    offset += d_verts_arrs_bytes;
-
-    h_verts_temp.z = (float*)(d_gemv_arrays_membuf + offset);
-    offset += d_verts_arrs_bytes;
-
-    d_offsets =  (float*)(d_gemv_arrays_membuf + offset);
+    d_offsets =  (float*)(d_batch_ptrs_membuf + offset);
     offset += d_offsets_bytes;
 
-    d_vertices_raw_arr_membuf = (float*)(d_gemv_arrays_membuf + offset);
-    offset += d_vertices_raw_arr_membuf_bytes;
-
     //copy arrays data
-    cuda_log(cudaMemcpy(h_verts_temp.x, verts->x, d_verts_arrs_bytes * 3, cudaMemcpyHostToDevice));
-    cuda_log(cudaMemcpy(d_verts, &h_verts_temp, d_verts_bytes, cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_offsets, offsets, d_offsets_bytes, cudaMemcpyHostToDevice));
 
     unsigned poly_total_blocksize = 32;
-    if (verts->size >= 4480)
+    if (n_verts >= 4480)
     {
         poly_total_blocksize = 128;
     }
 
-    if (verts->size >= 8960)
+    if (n_verts >= 8960)
     {
         poly_total_blocksize = 256;
     }
 
-    if (verts->size >= 17920)
+    if (n_verts >= 17920)
     {
         poly_total_blocksize = 512;
     }
 
-    if (verts->size >= 35840)
+    if (n_verts >= 35840)
     {
         poly_total_blocksize = 1024;
     }
 
     //initialize all arrays for batched gemv
-    initVerticesArr<<<(unsigned)(verts->size/poly_total_blocksize + 1), poly_total_blocksize>>>(d_vertices_raw_arr, d_offsets_arr, d_rot_xyz_arr, d_verts, d_vertices_raw_arr_membuf, d_rot_xyz, d_offsets);
+    kernel_initBatchPtrs<<<(unsigned)(n_verts/poly_total_blocksize + 1), poly_total_blocksize>>>(d_vertices_batch_ptrs, d_offsets_batch_ptrs, d_rot_xyz_batch_ptrs, d_verts, d_verts_transformed, d_rot_xyz, d_offsets);
     cuda_log(cudaDeviceSynchronize());
 
     const float h_beta_gemv = 1;
 
     //Everything was for this moment
-    cuda_log(cublasSgemvBatched(handle, CUBLAS_OP_N, 3, 3, &h_alpha, d_rot_xyz_arr, 3, d_vertices_raw_arr, 1, &h_beta_gemv, d_offsets_arr, verts->size, verts->size));
+    cuda_log(cublasSgemvBatched(handle, CUBLAS_OP_N, 3, 3, &h_alpha, d_rot_xyz_batch_ptrs, 3, d_vertices_batch_ptrs, n_verts, &h_beta_gemv, d_offsets_batch_ptrs, n_verts, n_verts));
     cuda_log(cudaDeviceSynchronize());
-
-    //Get our result back to RAM
-    cuda_log(cudaMemcpy(verts_transformed, d_verts, sizeof(vertices), cudaMemcpyDeviceToHost));
-
-    float* h_verts_arr = new float[verts->size * 3];
-    cuda_log(cudaMemcpy(h_verts_arr, h_verts_temp.x, d_verts_arrs_bytes * 3, cudaMemcpyDeviceToHost));
-
-    verts_transformed->x = h_verts_arr;
-    verts_transformed->y = h_verts_arr + verts_transformed->size;
-    verts_transformed->z = h_verts_arr + verts_transformed->size * 2;
 
     //Free GPU memory
     cuda_log(cudaFree(d_rot_membuf));
-    cuda_log(cudaFree(d_gemv_arrays_membuf));
+    cuda_log(cudaFree(d_batch_ptrs_membuf));
 }

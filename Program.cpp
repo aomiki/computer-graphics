@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     lr1_task2_line(draw_line, lr1_result_folder / "t2_img_line_bresenham", &codec);
 
     //lr1_task3_vertices(lr1_result_folder / "t3_vertices.txt", input_folder / "model.obj");
-    lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", 5000, 500, &codec);
+    lr1_task4_draw_vertices(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t4_draw_vertices", 5000, 500, &codec, &vt_transforms);
     lr1_task5_polygons(lr1_result_folder / "t5_polygons.txt", input_folder / "model.obj");
     lr1_task6_draw_object(1000, 1000, input_folder / "model.obj", lr1_result_folder / "t6_object", &codec);
 

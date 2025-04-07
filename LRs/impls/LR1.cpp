@@ -90,9 +90,7 @@ void lr1_task3_vertices(std::string filepath, std::string in_filename)
     }
     out.close();
 
-    delete verts.x;
-    delete verts.y;
-    delete verts.z;
+    delete [] verts.x;
 }
 
 void lr1_task5_polygons(std::string filepath, std::string in_filename)
@@ -106,26 +104,26 @@ void lr1_task5_polygons(std::string filepath, std::string in_filename)
     }
     out.close();
 
-    delete polys.vertex_index1;
-    delete polys.vertex_index2;
-    delete polys.vertex_index3;
+    delete [] polys.vertex_index1;
 }
 
-void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath, int scale, int offset, image_codec* codec)
+void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_filename,std::string filepath, int scale, int offset, image_codec* codec, vertex_transforms* vt_transforms)
 {
     matrix_rgb matrix(width, height);
     matrix.fill(color_rgb(255, 255, 255));
     vertices verts;
+    polygons polys;
     readObj(in_filename, &verts);
-    draw_vertices(&matrix, &verts, color_rgb(95, 0, 237), scale, offset);
+
+    model_renderer renderer(&verts, &polys, vt_transforms);
+
+    renderer.draw_vertices(&matrix, color_rgb(95, 0, 237), scale, offset);
 
     std::vector<unsigned char> png_buffer;
     codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
     codec->save_image_file(&png_buffer, filepath);
 
-    delete verts.x;
-    delete verts.y;
-    delete verts.z;
+    delete [] verts.x;
 }
 
 void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filename,std::string filepath, image_codec* codec)
@@ -159,11 +157,7 @@ void lr1_task6_draw_object(unsigned width, unsigned height, std::string in_filen
     codec->encode(&png_buffer, &matrix, ImageColorScheme::IMAGE_RGB, 8);
     codec->save_image_file(&png_buffer, filepath);
 
-    delete verts.x;
-    delete verts.y;
-    delete verts.z;
+    delete [] verts.x;
 
-    delete polys.vertex_index1;
-    delete polys.vertex_index2;
-    delete polys.vertex_index3;
+    delete [] polys.vertex_index1;
 }

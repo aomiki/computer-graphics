@@ -5,15 +5,61 @@
 #include "vertex_tools.h"
 #include "image_draw_objects.h"
 
-template<typename E>
-void draw_vertices(matrix_color<E>* m, vertices* verts, E vertex_color, float scaleX, float scaleY)
+model_renderer::model_renderer(vertices *verts, polygons *polys, vertex_transforms* vt_transformer)
 {
-    for (size_t i = 0; i < verts->size; i++)
+    this->vt_transformer = vt_transformer;
+    this->n_polys = polys->size;
+    this->n_verts = verts->size;
+
+    //copy vertices
+    d_verts = new vertices();
+    memcpy(d_verts, verts, sizeof(vertices));
+
+    float* verts_arr = new float[n_verts * 3];
+    d_verts->x = verts_arr;
+    d_verts->y = verts_arr + n_verts;
+    d_verts->z = verts_arr + n_verts * 2;
+
+    memcpy(d_verts->x, verts->x, n_verts * sizeof(float) * 3);
+
+    //copy polygons
+    d_polys = new polygons();
+    memcpy(d_polys, polys, sizeof(polygons));
+
+    unsigned* polys_arr = new unsigned[n_polys * 3];
+    d_polys->vertex_index1 = polys_arr;
+    d_polys->vertex_index2 = polys_arr + n_polys;
+    d_polys->vertex_index3 = polys_arr + n_polys*2;
+
+    memcpy(d_polys->vertex_index1, polys->vertex_index1, n_polys * sizeof(unsigned) * 3);
+
+    this->d_verts_transformed = d_verts;
+}
+
+model_renderer::~model_renderer()
+{
+    if (d_verts_transformed != d_verts)
+    {
+        delete [] d_verts_transformed->x;
+        delete d_verts_transformed;
+    }
+
+    delete [] d_verts->x;
+    delete d_verts;
+
+    delete [] d_polys->vertex_index1;
+    delete d_polys;
+}
+
+template<typename E>
+void model_renderer::draw_vertices(matrix_color<E>* m, E vertex_color, float scaleX, float scaleY)
+{
+    for (size_t i = 0; i < n_verts; i++)
     {
         matrix_coord img_center((unsigned)(m->width/2), (unsigned)(m->height/2));
 
-        int x = static_cast<int>(scaleX * verts->x[i] / verts->z[i] + img_center.x);
-        int y = static_cast<int>(m->height - (scaleY * verts->y[i] / verts->z[i]  + img_center.y));
+        int x = static_cast<int>(scaleX * d_verts_transformed->x[i] / d_verts_transformed->z[i] + img_center.x);
+        int y = static_cast<int>(m->height - (scaleY * d_verts_transformed->y[i] / d_verts_transformed->z[i]  + img_center.y));
 
         if (x >= m->width || y >= m->height)
             return;
@@ -70,26 +116,43 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
     drawPolygonInternal(img, min, max, vals, v1, v2, v3);
 }
 
-template <typename E>
-void draw_polygons_filled(matrix_color<E>* img, vertices* verts, polygons* polys, float scaleX, float scaleY, unsigned char* modelColor)
+
+void model_renderer::rotateAndOffset(float offsets[3], float angles[3])
+{
+    if (d_verts_transformed == d_verts)
+    {
+        //copy vertices
+        d_verts_transformed = new vertices();
+    
+        float* verts_arr = new float[n_verts * 3];
+        d_verts_transformed->x = verts_arr;
+        d_verts_transformed->y = verts_arr + n_verts;
+        d_verts_transformed->z = verts_arr + n_verts * 2;
+    }
+
+    vt_transformer->rotateAndOffset(d_verts_transformed, d_verts, n_verts, offsets, angles);
+}
+
+template<typename E>
+void model_renderer::draw_polygons(matrix_color<E> *img, float scaleX, float scaleY, unsigned char* modelColor)
 {
     std::vector<float> zbuffer(img->width * img->height, std::numeric_limits<float>::max());
-    for (size_t i = 0; i < polys->size; i++)
+    for (size_t i = 0; i < n_polys; i++)
     {
         vertex poly_v1(
-            verts->x[polys->vertex_index1[i]-1],
-            verts->y[polys->vertex_index1[i]-1],
-            verts->z[polys->vertex_index1[i]-1]
+            d_verts_transformed->x[d_polys->vertex_index1[i]-1],
+            d_verts_transformed->y[d_polys->vertex_index1[i]-1],
+            d_verts_transformed->z[d_polys->vertex_index1[i]-1]
         );
         vertex poly_v2(
-            verts->x[polys->vertex_index2[i]-1],
-            verts->y[polys->vertex_index2[i]-1],
-            verts->z[polys->vertex_index2[i]-1]
+            d_verts_transformed->x[d_polys->vertex_index2[i]-1],
+            d_verts_transformed->y[d_polys->vertex_index2[i]-1],
+            d_verts_transformed->z[d_polys->vertex_index2[i]-1]
         );
         vertex poly_v3(
-            verts->x[polys->vertex_index3[i]-1],
-            verts->y[polys->vertex_index3[i]-1],
-            verts->z[polys->vertex_index3[i]-1]
+            d_verts_transformed->x[d_polys->vertex_index3[i]-1],
+            d_verts_transformed->y[d_polys->vertex_index3[i]-1],
+            d_verts_transformed->z[d_polys->vertex_index3[i]-1]
         );
 
         unsigned char* c_polyg_color = new unsigned char[img->components_num];

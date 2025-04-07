@@ -95,24 +95,22 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     polygons polys;
     vertex v;
     readObj(in_path, &verts, &polys);
+
+    model_renderer renderer(&verts, &polys, vt_transforms);
     
     float offsets[3] = {0, 0, 5};
     float angles[3] = {0, 3, 0}; 
     float scaleX = 200;
     float scaleY = 200;
     
-    vt_transforms->rotateAndOffset(&verts, &verts, offsets, angles);
+    renderer.rotateAndOffset(offsets, angles);
 
     unsigned char modelColor[3] = { 255, 255, 255 };
 
-    draw_polygons_filled(&matrix, &verts, &polys, scaleX, scaleY, modelColor);
+    renderer.draw_polygons(&matrix, scaleX, scaleY, modelColor);
     codec->encode(png_buffer, &matrix, ImageColorScheme::IMAGE_GRAY, 8);
 
-    delete verts.x;
-    delete verts.y;
-    delete verts.z;
+    delete [] verts.x;
 
-    delete polys.vertex_index1;
-    delete polys.vertex_index2;
-    delete polys.vertex_index3;
+    delete [] polys.vertex_index1;
 }

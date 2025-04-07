@@ -29,7 +29,7 @@ class vertex_transforms
         vertex_transforms();
         ~vertex_transforms();
 
-        void rotateAndOffset(vertices* verts_transformed, vertices* verts, float offsets[3], float angles[3]);
+        void rotateAndOffset(vertices* verts_transformed, vertices* verts, unsigned n_verts, float offsets[3], float angles[3]);
 };
 
 #endif
