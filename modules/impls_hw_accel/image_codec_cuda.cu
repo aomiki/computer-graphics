@@ -96,7 +96,7 @@ void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_mat
     // Fill nv_image with image data, by copying data from matrix to GPU
     // docs about nv_image: https://docs.nvidia.com/cuda/nvjpeg/index.html#nvjpeg-encode-examples
     cuda_log(cudaMalloc((void **)&(nv_image.channel[0]), pitch_0_size * img_matrix->height));
-    cuda_log(cudaMemcpy(nv_image.channel[0], img_matrix->get_arr_interlaced(), pitch_0_size * img_matrix->height, cudaMemcpyHostToDevice));
+    cuda_log(cudaMemcpy(nv_image.channel[0], img_matrix->get_arr_interlaced(), pitch_0_size * img_matrix->height, cudaMemcpyDeviceToDevice));
     
     nv_image.pitch[0] = pitch_0_size;
 

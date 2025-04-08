@@ -2,8 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "image_codec.h"
-#include "vertex_tools.h"
 #include "obj_parser.h"
 #include "image_draw_objects.h"
 
@@ -33,8 +31,7 @@ public slots:
     void chooseModelColorClicked();
 
 private:
-    image_codec* codec;
-    vertex_transforms* vt_transform;
+    scene* curr_scene;
 
     QImage* curr_image = nullptr;
     std::string image_basename = "";

@@ -41,9 +41,6 @@ void model_renderer::draw_vertices(matrix_color<E>* m, E vertex_color, float sca
 
     matrix* d_m;
     const unsigned d_m_bytes = sizeof(matrix);
-
-    unsigned char* d_arr_interlaced;
-    const unsigned d_arr_interlaced_bytes = m->size_interlaced();
     
     unsigned char* d_vertex_color;
     const unsigned d_vertex_color_bytes = m->components_num * sizeof(unsigned char);
@@ -52,7 +49,6 @@ void model_renderer::draw_vertices(matrix_color<E>* m, E vertex_color, float sca
     cuda_log(cudaMalloc(
         &d_membuf,
         d_m_bytes +
-        d_arr_interlaced_bytes +
         d_vertex_color_bytes
     ));
 
@@ -61,13 +57,10 @@ void model_renderer::draw_vertices(matrix_color<E>* m, E vertex_color, float sca
     d_m = (matrix*)(d_membuf + mem_offset);
     mem_offset += d_m_bytes;
 
-    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
-    mem_offset += d_arr_interlaced_bytes;
-
     d_vertex_color = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += d_vertex_color_bytes;
 
-    transferMatrixToDevice(d_m, d_arr_interlaced, m);
+    cuda_log(cudaMemcpy(d_m, (matrix*)m, sizeof(matrix), cudaMemcpyHostToDevice));
 
     unsigned char* h_vertex_color = new unsigned char[m->components_num];
 
@@ -77,8 +70,6 @@ void model_renderer::draw_vertices(matrix_color<E>* m, E vertex_color, float sca
     kernel_drawVertices<<<block_num, blockSize>>>(d_m, d_verts_transformed, d_vertex_color, scaleX, scaleY);
 
     cuda_log(cudaDeviceSynchronize());
-
-    transferMatrixDataToHost(m, d_m, false);
 
     cuda_log(cudaFree(d_membuf));
     
@@ -345,9 +336,8 @@ __global__ void kernel_drawPolygonsFilled(matrix* m, vertices* verts, polygons* 
     cuda_log(cudaGetLastError());
 };
 
-model_renderer::model_renderer(vertices *verts, polygons *polys, vertex_transforms* vt_transformer)
+model_renderer::model_renderer(vertices *verts, polygons *polys)
 {
-    this->vt_transformer = vt_transformer;
     this->d_verts_transformed_membuf = nullptr;
     this->n_verts = verts->size;
     this->n_polys = polys->size;
@@ -418,7 +408,7 @@ model_renderer::~model_renderer()
     }
 }
 
-void model_renderer::rotateAndOffset(float offsets[3], float angles[3])
+void model_renderer::rotateAndOffset(float offsets[3], float angles[3], vertex_transforms* vt_transformer)
 {
     const unsigned d_verts_bytes = sizeof(vertices);
     const unsigned d_verts_arrs_bytes = n_verts * sizeof(float);
@@ -496,9 +486,6 @@ void model_renderer::draw_polygons<E>(matrix_color<E> *img, float scaleX, float 
     matrix* d_m;
     const unsigned d_m_bytes = sizeof(matrix);
 
-    unsigned char* d_arr_interlaced;
-    const unsigned d_arr_interlaced_bytes = img->size_interlaced();
-
     unsigned char* c_polyg_color_buffer;
     const unsigned c_polyg_color_buffer_bytes = n_polys * img->components_num;
 
@@ -510,7 +497,6 @@ void model_renderer::draw_polygons<E>(matrix_color<E> *img, float scaleX, float 
         &d_membuf,
         d_zbuffer_bytes +
         d_m_bytes +
-        d_arr_interlaced_bytes +
         c_polyg_color_buffer_bytes +
         d_modelColor_bytes
     ));
@@ -523,17 +509,13 @@ void model_renderer::draw_polygons<E>(matrix_color<E> *img, float scaleX, float 
     d_m = (matrix*)(d_membuf + mem_offset);
     mem_offset += d_m_bytes;
 
-    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
-    mem_offset += d_arr_interlaced_bytes;
-
     c_polyg_color_buffer = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += c_polyg_color_buffer_bytes;
 
     d_modelColor = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += d_modelColor_bytes;
 
-    transferMatrixToDevice(d_m, d_arr_interlaced, img);
-
+    cuda_log(cudaMemcpy(d_m, (matrix*)img, d_m_bytes, cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_modelColor, modelColor, d_modelColor_bytes, cudaMemcpyHostToDevice));
 
     nvtxRangeEnd(nvtx_render_memory_to_mark);
@@ -573,12 +555,112 @@ void model_renderer::draw_polygons<E>(matrix_color<E> *img, float scaleX, float 
     cuda_log(cudaDeviceSynchronize());
 
     nvtxRangeId_t nvtx_render_memory_from_mark = nvtxRangeStartA("render_draw_memory_from_gpu");
-    transferMatrixDataToHost(img, d_m, false);
 
     cuda_log(cudaFree(d_membuf));
     nvtxRangeEnd(nvtx_render_memory_from_mark);
 
     nvtxRangeEnd(nvtx_render_mark);
+}
+
+
+scene::scene()
+{
+    codec = new image_codec();
+    vt_transformer = new vertex_transforms();
+    img_matrix = nullptr;
+}
+
+scene::~scene()
+{
+    delete codec;
+    delete vt_transformer;
+    if (img_matrix != nullptr)
+    {
+        delete img_matrix;
+    }
+}
+
+void scene::set_scene_params(unsigned width, unsigned height, ImageColorScheme colorScheme)
+{
+    if (img_matrix != nullptr)
+    {
+        if (width == img_matrix->width && height == img_matrix->height && colorScheme == this->colorScheme)
+        {
+            return;
+        }
+
+        if(colorScheme == this->colorScheme)
+        {
+            img_matrix->resize(width, height);
+        }
+        else
+        {
+            delete img_matrix;
+            img_matrix = nullptr;
+        }
+        
+    }
+
+    if (img_matrix == nullptr)
+    {
+        this->colorScheme = colorScheme;
+        switch (colorScheme)
+        {
+            case IMAGE_GRAY:
+                img_matrix = new matrix_gray(width, height);
+                break;
+            case IMAGE_RGB:
+                img_matrix = new matrix_rgb(width, height);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void scene::fill(unsigned char* color)
+{
+    img_matrix->fill(color);
+}
+
+void scene::encode(std::vector<unsigned char>& img_buffer)
+{
+    codec->encode(&img_buffer, img_matrix, colorScheme, 8);
+}
+
+void scene::draw_model_polygons(model_renderer& model, float scaleX, float scaleY, unsigned char* modelColor)
+{
+    switch (colorScheme)
+    {
+        case IMAGE_GRAY:
+            model.draw_polygons((matrix_gray*)img_matrix, scaleX, scaleY, modelColor);
+            break;
+        case IMAGE_RGB:
+            model.draw_polygons((matrix_rgb*)img_matrix, scaleX, scaleY, modelColor);
+            break;
+        default:
+            break;
+    }
+}
+
+void scene::draw_model_vertices(model_renderer& model, float scaleX, float scaleY, unsigned char* modelColor)
+{
+    switch (colorScheme)
+    {
+        case IMAGE_GRAY:
+            model.draw_vertices((matrix_gray*)img_matrix, ((matrix_gray*)img_matrix)->c_arr_to_element(modelColor), scaleX, scaleY);
+            break;
+        case IMAGE_RGB:
+            model.draw_vertices((matrix_rgb*)img_matrix, ((matrix_rgb*)img_matrix)->c_arr_to_element(modelColor), scaleX, scaleY);
+            break;
+        default:
+            break;
+    }
+}
+
+void scene::transform_model(model_renderer& model, float offsets[3], float angles[3])
+{
+    model.rotateAndOffset(offsets, angles, vt_transformer);
 }
 
 #include "_image_draw_objects_instances.h"

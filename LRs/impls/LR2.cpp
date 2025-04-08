@@ -96,14 +96,14 @@ void lr2_task10_model(std::string in_path, std::string out_path, std::vector<uns
     vertex v;
     readObj(in_path, &verts, &polys);
 
-    model_renderer renderer(&verts, &polys, vt_transforms);
+    model_renderer renderer(&verts, &polys);
     
     float offsets[3] = {0, 0, 5};
     float angles[3] = {0, 3, 0}; 
     float scaleX = 200;
     float scaleY = 200;
     
-    renderer.rotateAndOffset(offsets, angles);
+    renderer.rotateAndOffset(offsets, angles, vt_transforms);
 
     unsigned char modelColor[3] = { 255, 255, 255 };
 

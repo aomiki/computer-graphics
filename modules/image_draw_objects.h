@@ -27,10 +27,9 @@ class model_renderer
         vertices h_verts_transformed_d_copy;
 
         image_codec* codec;
-        vertex_transforms* vt_transformer;
         
     public:
-        model_renderer(vertices *verts, polygons *polys, vertex_transforms* vt_transformer);
+        model_renderer(vertices *verts, polygons *polys);
         ~model_renderer();
 
         template<typename E>
@@ -39,7 +38,7 @@ class model_renderer
         template<typename E>
         void draw_vertices(matrix_color<E>* m, E vertex_color, float scaleX, float scaleY);
 
-        void rotateAndOffset(float offsets[3], float angles[3]);
+        void rotateAndOffset(float offsets[3], float angles[3], vertex_transforms* vt_transformer);
 
         unsigned get_vertices_size()
         {
@@ -50,6 +49,32 @@ class model_renderer
         {
             return n_polys;
         }
+};
+
+class scene
+{
+    private:
+        image_codec* codec;
+        vertex_transforms* vt_transformer;
+        matrix* img_matrix;
+        ImageColorScheme colorScheme;
+
+    public:
+        scene();
+        ~scene();
+
+        image_codec* get_codec()
+        {
+            return codec;
+        }
+
+        void set_scene_params(unsigned width, unsigned height, ImageColorScheme colorScheme);
+        void fill(unsigned char* color);
+
+        void encode(std::vector<unsigned char>& img_buffer);
+        void draw_model_polygons(model_renderer& model, float scaleX, float scaleY, unsigned char* modelColor);
+        void draw_model_vertices(model_renderer& model, float scaleX, float scaleY, unsigned char* modelColor);
+        void transform_model(model_renderer& model, float offsets[3], float angles[3]);       
 };
 
 __shared_func__ void calc_triangle_boundaries(screen_coords& min_coord, screen_coords& max_coord, vec3& screen_v1, vec3& screen_v2, vec3& screen_v3, matrix& m);

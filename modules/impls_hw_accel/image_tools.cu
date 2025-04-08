@@ -15,6 +15,45 @@ __global__ void kernel_fillInterlaced(matrix* m, unsigned char* components)
     m->get(x, y)[threadIdx.z] = components[threadIdx.z];
 }
 
+matrix::matrix(unsigned int components_num, unsigned width, unsigned height)
+{
+    this->height = 0;
+    this->width = 0;
+    this->components_num = components_num;
+    set_arr_interlaced(nullptr);
+
+    resize(width, height);
+}
+
+void matrix::resize(unsigned width, unsigned height)
+{
+    unsigned int old_size = size_interlaced();
+
+    this->width = width;
+    this->height = height;
+
+    unsigned char* d_arr_interlaced;
+    const unsigned d_arr_interlaced_bytes = size_interlaced();
+
+    char* d_membuf;
+    cuda_log(cudaMalloc(
+        &d_membuf,
+        d_arr_interlaced_bytes
+    ));
+
+    unsigned mem_offset = 0;
+
+    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
+    mem_offset += d_arr_interlaced_bytes;
+
+    if (old_size != 0)
+    {
+        cuda_log(cudaFree(get_arr_interlaced()));
+    }
+
+    set_arr_interlaced(d_arr_interlaced);
+}
+
 /// @brief Расположение элементов будет - по оси x = ось x матрицы, по оси y = ось y матрицы, по оси z = компоненты каждого элемента матрицы
 /// @param m 
 /// @param components Значение которое нужно установить
@@ -53,9 +92,6 @@ void matrix::fill(unsigned char *value)
     matrix* d_m;
     const unsigned d_m_bytes = sizeof(matrix);
 
-    unsigned char* d_arr_interlaced;
-    const unsigned d_arr_interlaced_bytes = size_interlaced();
-
     unsigned char* d_vals;
     const unsigned d_vals_bytes = this->components_num * sizeof(unsigned char);
 
@@ -63,7 +99,6 @@ void matrix::fill(unsigned char *value)
     cuda_log(cudaMalloc(
         &d_membuf,
         d_m_bytes +
-        d_arr_interlaced_bytes +
         d_vals_bytes
     ));
 
@@ -72,21 +107,23 @@ void matrix::fill(unsigned char *value)
     d_m = (matrix*)d_membuf;
     mem_offset += d_m_bytes;
 
-    d_arr_interlaced = (unsigned char*)(d_membuf + mem_offset);
-    mem_offset += d_arr_interlaced_bytes;
-
     d_vals = (unsigned char*)(d_membuf + mem_offset);
     mem_offset += d_vals_bytes;
 
-    transferMatrixToDevice(d_m, d_arr_interlaced, this);
-
+    cuda_log(cudaMemcpy(d_m, (matrix*)this, sizeof(matrix), cudaMemcpyHostToDevice));
     cuda_log(cudaMemcpy(d_vals, value, d_vals_bytes, cudaMemcpyHostToDevice));
 
     kernel_fillInterlaced<<<gridSize, blockSize>>>(d_m, d_vals);
     cuda_log(cudaDeviceSynchronize());
     fflush(stdout);
 
-    transferMatrixDataToHost(this, d_m, false);
-
     cuda_log(cudaFree(d_membuf));
+}
+
+matrix::~matrix()
+{
+    if (size_interlaced() != 0)
+    {
+        cuda_log(cudaFree(get_arr_interlaced()));
+    }
 }

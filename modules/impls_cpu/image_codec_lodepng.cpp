@@ -75,6 +75,7 @@ void image_codec::decode(std::vector<unsigned char>* img_source, matrix* img_mat
     unsigned int* result_h = new unsigned int;
     
     lodepng_decode_memory(matrix_buffer, result_w, result_h, img_source->data(),  img_source->size(), ColorSchemeToLodeColorType(colorScheme), bit_depth);
+    
     img_matrix->set_arr_interlaced(*matrix_buffer, img_matrix->width, img_matrix->height);
 
     delete result_w;

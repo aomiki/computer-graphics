@@ -19,8 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    codec = new image_codec();
-    vt_transform = new vertex_transforms();
+    curr_scene = new scene();
 
     connect(ui->spinBox_scaleX, SIGNAL(valueChanged(double)), this, SLOT(syncLockedScales()));
     connect(ui->checkBox_lockScale, SIGNAL(clicked(bool)), this, SLOT(lockScale()));
@@ -114,19 +113,18 @@ void MainWindow::updateImage()
     ui->graphicsView_image->setScene(scene);
 }
 
-template <typename T>
-void render_model(matrix_color<T>* matrix, QString renderType, model_renderer* model, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor)
+void render_model(QString renderType, model_renderer* model, float* offsets, float* angles, float scaleX, float scaleY, unsigned char* modelColor, scene* curr_scene)
 {
-    model->rotateAndOffset(offsets, angles);
+    curr_scene->transform_model(*model, offsets, angles);
 
     if (renderType == "polygons")
     {
-        model->draw_polygons(matrix, scaleX, scaleY, modelColor);
+        curr_scene->draw_model_polygons(*model, scaleX, scaleY, modelColor);
     }
     else if (renderType == "vertices")
     {
         unsigned char color[3] = {0, 0, 0};
-        model->draw_vertices(matrix, matrix->c_arr_to_element(color), scaleX, scaleY);
+        curr_scene->draw_model_vertices(*model, scaleX, scaleY, modelColor);
     }
     else
     {
@@ -172,7 +170,6 @@ void MainWindow::buttonRenderClicked()
     log("render type: " + renderType);
     log("starting rendering...");
 
-    matrix* img_matrix;
     ImageColorScheme colorScheme;
 
     if ((curr_bgColor[0] == curr_bgColor[1] && curr_bgColor[1] == curr_bgColor[2]) &&
@@ -180,33 +177,20 @@ void MainWindow::buttonRenderClicked()
     )
     {
         colorScheme = ImageColorScheme::IMAGE_GRAY;
-        matrix_gray* img_gray = new matrix_gray(width, height);
-        img_gray->fill(curr_bgColor[0]);
-        img_matrix = img_gray;
 
         ui->label_imgColorType->setText("Grayscale");
     }
     else
     {
         colorScheme = ImageColorScheme::IMAGE_RGB;
-        matrix_rgb* img_rgb = new matrix_rgb(width, height);
-        img_rgb->fill(img_rgb->c_arr_to_element(curr_bgColor));
-        img_matrix = img_rgb;
-
         ui->label_imgColorType->setText("RGB");
     }
 
-    switch (colorScheme)
-    {
-        case IMAGE_GRAY:
-            render_model((matrix_gray*)img_matrix, renderType, curr_model, offsets, angles, scaleX, scaleY, curr_modelColor);
-            break;
-        case IMAGE_RGB:
-            render_model((matrix_rgb*)img_matrix, renderType, curr_model, offsets, angles, scaleX, scaleY, curr_modelColor);
-            break;
-        default:
-            break;
-    }
+    curr_scene->set_scene_params(width, height, colorScheme);
+
+    curr_scene->fill(curr_bgColor);
+
+    render_model(renderType, curr_model, offsets, angles, scaleX, scaleY, curr_modelColor, curr_scene);
 
     log("finished rendering.");
     log("");
@@ -219,14 +203,14 @@ void MainWindow::buttonRenderClicked()
         png_buffer = new std::vector<unsigned char>();
     }
 
-    codec->encode(png_buffer, img_matrix, colorScheme, 8);
+    curr_scene->encode(*png_buffer);
 
     log("encoded.");
     log("");
 
     std::string img_format_str;
 
-    switch (codec->native_format())
+    switch (curr_scene->get_codec()->native_format())
     {
         case PNG:
             img_format_str = "PNG";
@@ -278,7 +262,7 @@ void MainWindow::acceptFilenameClicked()
     log("polygons: " + QString::number(polys->size));
     log("");
 
-    curr_model = new model_renderer(verts, polys, vt_transform);
+    curr_model = new model_renderer(verts, polys);
 
     delete [] verts->x;
     delete verts;
@@ -299,7 +283,7 @@ void MainWindow::buttonSaveClicked()
 
     std::string ext = "";
 
-    switch (codec->native_format())
+    switch (curr_scene->get_codec()->native_format())
     {
         case JPEG:
             ext = ".jpeg";
@@ -314,7 +298,7 @@ void MainWindow::buttonSaveClicked()
     std::string filepath = "output/"+ image_basename;
     log(QString::fromStdString("saving to file: " + filepath));
 
-    codec->save_image_file(png_buffer, filepath);
+    curr_scene->get_codec()->save_image_file(png_buffer, filepath);
     log("saved.");
 
     log("");
@@ -335,6 +319,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete codec;
-    delete vt_transform;
+    delete curr_model;
+    delete curr_scene;
 }

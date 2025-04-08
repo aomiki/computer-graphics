@@ -5,9 +5,8 @@
 #include "vertex_tools.h"
 #include "image_draw_objects.h"
 
-model_renderer::model_renderer(vertices *verts, polygons *polys, vertex_transforms* vt_transformer)
+model_renderer::model_renderer(vertices *verts, polygons *polys)
 {
-    this->vt_transformer = vt_transformer;
     this->n_polys = polys->size;
     this->n_verts = verts->size;
 
@@ -117,7 +116,7 @@ void draw_polygon(matrix_color<E>* img, E polyg_color, vertex v1, vertex v2, ver
 }
 
 
-void model_renderer::rotateAndOffset(float offsets[3], float angles[3])
+void model_renderer::rotateAndOffset(float offsets[3], float angles[3], vertex_transforms* vt_transformer)
 {
     if (d_verts_transformed == d_verts)
     {
@@ -204,6 +203,106 @@ void model_renderer::draw_polygons(matrix_color<E> *img, float scaleX, float sca
 
         drawPolygonInternal(img, min, max, c_polyg_color, v1, v2, v3, &zbuffer);
     }
+}
+
+scene::scene()
+{
+    codec = new image_codec();
+    vt_transformer = new vertex_transforms();
+    img_matrix = nullptr;
+}
+
+scene::~scene()
+{
+    delete codec;
+    delete vt_transformer;
+    if (img_matrix != nullptr)
+    {
+        delete img_matrix;
+    }
+}
+
+void scene::set_scene_params(unsigned width, unsigned height, ImageColorScheme colorScheme)
+{
+    if (img_matrix != nullptr)
+    {
+        if (width == img_matrix->width && height == img_matrix->height && colorScheme == this->colorScheme)
+        {
+            return;
+        }
+
+        if(colorScheme == this->colorScheme)
+        {
+            img_matrix->resize(width, height);
+        }
+        else
+        {
+            delete img_matrix;
+            img_matrix = nullptr;
+        }
+        
+    }
+
+    if (img_matrix == nullptr)
+    {
+        this->colorScheme = colorScheme;
+        switch (colorScheme)
+        {
+            case IMAGE_GRAY:
+                img_matrix = new matrix_gray(width, height);
+                break;
+            case IMAGE_RGB:
+                img_matrix = new matrix_rgb(width, height);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void scene::fill(unsigned char* color)
+{
+    img_matrix->fill(color);
+}
+
+void scene::encode(std::vector<unsigned char>& img_buffer)
+{
+    codec->encode(&img_buffer, img_matrix, colorScheme, 8);
+}
+
+void scene::draw_model_polygons(model_renderer& model, float scaleX, float scaleY, unsigned char* modelColor)
+{
+    switch (colorScheme)
+    {
+        case IMAGE_GRAY:
+            model.draw_polygons((matrix_gray*)img_matrix, scaleX, scaleY, modelColor);
+            break;
+        case IMAGE_RGB:
+            model.draw_polygons((matrix_rgb*)img_matrix, scaleX, scaleY, modelColor);
+            break;
+        default:
+            break;
+    }
+}
+
+void scene::draw_model_vertices(model_renderer& model, float scaleX, float scaleY, unsigned char* modelColor)
+{
+    switch (colorScheme)
+    {
+        case IMAGE_GRAY:
+            model.draw_vertices((matrix_gray*)img_matrix, ((matrix_gray*)img_matrix)->c_arr_to_element(modelColor), scaleX, scaleY);
+            break;
+        case IMAGE_RGB:
+            model.draw_vertices((matrix_rgb*)img_matrix, ((matrix_rgb*)img_matrix)->c_arr_to_element(modelColor), scaleX, scaleY);
+            break;
+        default:
+            break;
+    }
+}
+
+void scene::transform_model(model_renderer& model, float offsets[3], float angles[3])
+{
+    model.rotateAndOffset(offsets, angles, vt_transformer);
 }
 
 #include "_image_draw_objects_instances.h"

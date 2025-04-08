@@ -115,7 +115,7 @@ void lr1_task4_draw_vertices(unsigned width, unsigned height, std::string in_fil
     polygons polys;
     readObj(in_filename, &verts);
 
-    model_renderer renderer(&verts, &polys, vt_transforms);
+    model_renderer renderer(&verts, &polys);
 
     renderer.draw_vertices(&matrix, color_rgb(95, 0, 237), scale, offset);
 
