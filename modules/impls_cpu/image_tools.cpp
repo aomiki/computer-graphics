@@ -45,7 +45,7 @@ void matrix::fill(unsigned char *value)
 
 matrix::~matrix()
 {
-    if (size_interlaced() != 0)
+    if (size_interlaced() != 0 && arr != nullptr)
     {
         delete [] arr;
     }

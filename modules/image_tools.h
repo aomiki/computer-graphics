@@ -56,11 +56,11 @@ class matrix {
         void resize(unsigned width, unsigned height);
         void fill(unsigned char* value);
 
+        __shared_func__ virtual ~matrix();
         __shared_func__ unsigned char* get(unsigned int x, unsigned int y);
         __shared_func__ unsigned char* get_arr_interlaced();
         __shared_func__ unsigned int size_interlaced();
         __shared_func__ unsigned int size();
-        __shared_func__ ~matrix();
         __shared_func__ void set_arr_interlaced(unsigned char *arr, unsigned width, unsigned height);
         __shared_func__ void set_arr_interlaced(unsigned char *arr);
 };
