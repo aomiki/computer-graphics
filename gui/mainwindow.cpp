@@ -123,7 +123,6 @@ void render_model(QString renderType, model_renderer* model, float* offsets, flo
     }
     else if (renderType == "vertices")
     {
-        unsigned char color[3] = {0, 0, 0};
         curr_scene->draw_model_vertices(*model, scaleX, scaleY, modelColor);
     }
     else
