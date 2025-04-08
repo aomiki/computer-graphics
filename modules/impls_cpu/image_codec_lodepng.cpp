@@ -57,7 +57,7 @@ void image_codec::encode(std::vector<unsigned char>* img_buffer, matrix* img_mat
     lodepng_encode_memory(result_img, result_size, img_matrix->get_arr_interlaced(), img_matrix->width, img_matrix->height, ColorSchemeToLodeColorType(colorScheme), bit_depth);
     img_buffer->assign(*result_img, *result_img + *result_size);
 
-    delete [] *result_img;
+    delete *result_img;
     delete result_img;
 
     delete result_size;
